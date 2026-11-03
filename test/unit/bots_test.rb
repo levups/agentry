@@ -117,6 +117,6 @@ class BotsTest < Minitest::Test
     assert_equal "Another bot", Browser::Bot.bots["another-bot"]
     assert_includes Browser::Bot.bot_exceptions, "exclude-this-bot"
     assert_equal "New search engine",
-                 Browser::Bot.search_engines["new-search-engine"]
+      Browser::Bot.search_engines["new-search-engine"]
   end
 end

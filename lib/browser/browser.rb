@@ -53,7 +53,7 @@ module Browser
 
   Bot::DEFAULT_MATCHERS =
     [Bot::EmptyUserAgentMatcher, Bot::KnownBotsMatcher, Bot::KeywordMatcher]
-    .freeze
+      .freeze
 
   Error = Class.new(StandardError)
 

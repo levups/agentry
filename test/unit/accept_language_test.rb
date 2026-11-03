@@ -10,7 +10,7 @@ class AcceptLanguageTest < Minitest::Test
       assert_equal expect[:region], item.region, "failed region comparison"
     else
       assert_nil item.region,
-                 "region should be nil; got #{item.region.inspect} instead"
+        "region should be nil; got #{item.region.inspect} instead"
     end
 
     assert_equal expect[:quality], item.quality, "failed quality comparison"
@@ -161,6 +161,6 @@ class AcceptLanguageTest < Minitest::Test
   test "sets default quality value for invalid strings" do
     result = Browser::AcceptLanguage.parse(";q=0.0.0.0")
 
-    assert_equal 0.1, result[0].quality # rubocop:disable Minitest/AssertInDelta
+    assert_equal 0.1, result[0].quality
   end
 end

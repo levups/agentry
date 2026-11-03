@@ -3,8 +3,8 @@
 module Browser
   def self.user_agents
     @user_agents ||= browser_user_agents
-                     .merge(bot_user_agents)
-                     .merge(search_engine_user_agents)
+      .merge(bot_user_agents)
+      .merge(search_engine_user_agents)
   end
 
   def self.browser_user_agents

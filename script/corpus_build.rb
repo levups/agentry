@@ -23,9 +23,9 @@ end
 end
 
 user_agents = user_agents.compact
-                         .map(&:to_s)
-                         .reject {|user_agent| user_agent.include?("\n") }
-                         .uniq
+  .map(&:to_s)
+  .reject { |user_agent| user_agent.include?("\n") }
+  .uniq
 File.write(File.join(root, "corpus/user_agents.txt"),
-           user_agents.join("\n") << "\n")
+  user_agents.join("\n") << "\n")
 puts "#{user_agents.size} user agents"

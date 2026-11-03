@@ -47,7 +47,7 @@ module Browser
     def self.trie_source(words)
       trie = {}
       words.each do |word|
-        leaf = word.each_char.reduce(trie) {|node, char| node[char] ||= {} }
+        leaf = word.each_char.reduce(trie) { |node, char| node[char] ||= {} }
         leaf[:end] = true
       end
       trie_node_source(trie) || "(?!)"
@@ -60,14 +60,14 @@ module Browser
       branches = node.map do |char, child|
         Regexp.escape(char) + trie_node_source(child)
       end
-      branches.size == 1 ? branches.first : "(?:#{branches.join('|')})"
+      (branches.size == 1) ? branches.first : "(?:#{branches.join("|")})"
     end
     private_class_method :trie_source, :trie_node_source
 
     def self.why?(ua)
       ua = ua.downcase.strip
       browser = Browser.new(ua)
-      matchers.find {|matcher| matcher.call(ua, browser) }
+      matchers.find { |matcher| matcher.call(ua, browser) }
     end
 
     attr_reader :ua
@@ -81,7 +81,7 @@ module Browser
     end
 
     def why?
-      self.class.matchers.find {|matcher| matcher.call(ua, self) }
+      self.class.matchers.find { |matcher| matcher.call(ua, self) }
     end
 
     def search_engine?
@@ -91,7 +91,7 @@ module Browser
     def name
       return unless bot?
 
-      self.class.bots.find {|key, _| ua.include?(key) }&.last || GENERIC_NAME
+      self.class.bots.find { |key, _| ua.include?(key) }&.last || GENERIC_NAME
     end
 
     private def bot_exception?

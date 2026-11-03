@@ -12,7 +12,7 @@ LITERAL_VALUES = [true, false].freeze
 
 def callable_methods(klass, owner_classes)
   methods =
-    owner_classes.flat_map {|owner| owner.public_instance_methods(false) }
+    owner_classes.flat_map { |owner| owner.public_instance_methods(false) }
   methods = methods.uniq.select do |name|
     arity = klass.instance_method(name).arity
     arity.zero? || arity == -1
@@ -34,7 +34,7 @@ def answers(object, methods)
   methods.to_h do |name|
     value = begin
       object.public_send(name)
-    rescue StandardError => error
+    rescue => error
       "!#{error.class}"
     end
     [name, snapshot_value(value)]
@@ -48,16 +48,16 @@ user_agents_path = File.expand_path("../corpus/user_agents.txt", __dir__)
 
 File.foreach(user_agents_path, chomp: true) do |user_agent|
   browser = Browser.new(user_agent)
-  owner_classes = browser_classes.select {|klass| browser.is_a?(klass) }
+  owner_classes = browser_classes.select { |klass| browser.is_a?(klass) }
   row = {
     ua: user_agent,
     class: browser.class.name,
     browser: answers(browser, callable_methods(browser.class, owner_classes)),
     meta: browser.meta.sort,
     platform: answers(browser.platform,
-                      callable_methods(Browser::Platform, platform_classes)),
+      callable_methods(Browser::Platform, platform_classes)),
     device: answers(browser.device,
-                    callable_methods(Browser::Device, device_classes)),
+      callable_methods(Browser::Device, device_classes)),
     bot: answers(browser.bot, %i[bot? name search_engine?])
   }
   puts JSON.generate(row)

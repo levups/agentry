@@ -9,12 +9,10 @@ module Browser
     def self.parse(accept_language)
       return [] unless accept_language
 
-      accept_language
-        .split(",")
-        .map {|string| string.squeeze(" ").strip }
-        .map {|part| new(part) }
-        .reject {|al| al.quality.zero? }
-        .sort_by.with_index {|al, idx| [-al.quality, idx] }
+      languages = accept_language.split(",")
+      languages.map! { |string| new(string.squeeze(" ").strip) }
+      languages.reject! { |al| al.quality.zero? }
+      languages.sort_by.with_index { |al, idx| [-al.quality, idx] }
     end
 
     attr_reader :part

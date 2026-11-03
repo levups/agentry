@@ -26,7 +26,7 @@ module Browser
       end
     end
 
-    alias to_a meta
+    alias_method :to_a, :meta
 
     # Return meta representation as string.
     def to_s
@@ -119,7 +119,7 @@ module Browser
     # Detect if browser is Apple CoreMedia.
     def core_media?(expected_version = nil)
       ua.include?("CoreMedia") && detect_version?(full_version,
-                                                  expected_version)
+        expected_version)
     end
 
     # Detect if browser is PhantomJS
@@ -161,7 +161,7 @@ module Browser
     def yandex?(expected_version = nil)
       instance_of?(Yandex) && detect_version?(full_version, expected_version)
     end
-    alias yandex_browser? yandex?
+    alias_method :yandex_browser?, :yandex?
 
     # Detect if browser is UCBrowser.
     def uc_browser?(expected_version = nil)
@@ -180,7 +180,7 @@ module Browser
         detect_version?(full_version, expected_version)
     end
 
-    alias wechat? micro_messenger?
+    alias_method :wechat?, :micro_messenger?
 
     def weibo?(expected_version = nil)
       instance_of?(Weibo) && detect_version?(full_version, expected_version)
@@ -193,19 +193,19 @@ module Browser
     # Detect if browser is Opera Mini.
     def opera_mini?(expected_version = nil)
       ua.include?("Opera Mini") && detect_version?(full_version,
-                                                   expected_version)
+        expected_version)
     end
 
     # Detect if browser is DuckDuckGo.
     def duck_duck_go?(expected_version = nil)
       ua.include?("DuckDuckGo") && detect_version?(full_version,
-                                                   expected_version)
+        expected_version)
     end
 
     # Detect if browser is Samsung.
     def samsung_browser?(expected_version = nil)
       ua.include?("SamsungBrowser") && detect_version?(full_version,
-                                                       expected_version)
+        expected_version)
     end
 
     # Detect if browser is Huawei.
@@ -285,8 +285,8 @@ module Browser
       return if actual_bytesize < size_limit
 
       raise Error,
-            "#{subject} cannot be larger than #{size_limit} bytes; " \
-            "actual size is #{actual_bytesize} bytes"
+        "#{subject} cannot be larger than #{size_limit} bytes; " \
+        "actual size is #{actual_bytesize} bytes"
     end
   end
 end
