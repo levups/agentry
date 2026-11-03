@@ -1,0 +1,29 @@
+---
+inherit_gem:
+  rubocop-fnando: .rubocop.yml
+
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
+  Exclude:
+    - bin/**/*
+    - vendor/**/*
+    - Gemfile
+    - Rakefile
+    - "*.gemspec"
+    - config.ru
+
+Naming/VariableNumber:
+  Enabled: false
+
+Minitest/EmptyLineBeforeAssertionMethods:
+  Enabled: false
+
+# The upstream suite stays unmodified.
+Style/RedundantParentheses:
+  Exclude:
+    - test/browser_test.rb
+
+Style/ArgumentsForwarding:
+  Exclude:
+    - test/test_helper.rb

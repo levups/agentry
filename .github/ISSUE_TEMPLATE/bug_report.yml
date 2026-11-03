@@ -1,0 +1,26 @@
+name: Bug report
+description: A crash, a slowdown or an API that no longer behaves like the browser gem's
+labels: [bug]
+body:
+  - type: textarea
+    id: script
+    attributes:
+      label: Script
+      description: The smallest Ruby that reproduces it.
+      render: ruby
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+      description: What you expected, what happened instead, with the full backtrace.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: BrowserX 1.0.0 (or commit), Ruby 4.0.1, Rails 8.1
+    validations:
+      required: true

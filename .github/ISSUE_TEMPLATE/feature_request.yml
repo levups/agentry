@@ -1,0 +1,16 @@
+name: Feature request
+description: A new signal, bot category or integration
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you need
+      description: What you are trying to tell apart, and what stops you today.
+    validations:
+      required: true
+  - type: textarea
+    id: api
+    attributes:
+      label: How you would call it
+      description: New features are additions — the browser gem's API keeps its meaning.
+      render: ruby

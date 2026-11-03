@@ -1,0 +1,31 @@
+name: Wrong detection
+description: A browser, platform, device or bot BrowserX names wrongly, or misses
+labels: [bug]
+body:
+  - type: textarea
+    id: user_agent
+    attributes:
+      label: User agent
+      description: The full user agent string, and the Accept-Language or Client Hints headers if they matter.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+      description: What BrowserX answers (`name`, `version`, `platform`, `device`, `bot?`…) and what it should answer. Say whether the browser gem answers the same.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: Where the right answer comes from — the vendor's documentation, a crawler's published IP ranges…
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: BrowserX 1.0.0 (or commit), Ruby 4.0.1, Rails 8.1
+    validations:
+      required: true

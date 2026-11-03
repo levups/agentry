@@ -1,0 +1,10 @@
+pkg
+coverage
+doc
+log
+*.lock
+bin/
+.bundle
+corpus/sources/
+coverage/
+.minitestfailures
