@@ -8,7 +8,7 @@ Ruby 4.0 with YJIT), and its bot list is meant to be kept fresh from permissivel
 ([crawler-user-agents](https://github.com/monperrus/crawler-user-agents),
 [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt)).
 
-Originally written by Nando Vieira as [fnando/browser](https://github.com/fnando/browser) (MIT).
+Site: https://next-gen-gems.github.io/browserx/
 
 ## Installation
 
@@ -183,6 +183,12 @@ def modern_browser?(browser)
   ].any?
 end
 ```
+
+### Migrating from browser
+
+Replace `gem "browser"` with `gem "browserx"` in the Gemfile, nothing else: `require "browser"`, the `Browser`
+namespace and every predicate stay. To roll back, put `gem "browser"` back. BrowserX requires Ruby 3.3 or later
+and is tested on Rails 8.0 and 8.1.
 
 ### Rails integration
 
@@ -377,11 +383,23 @@ Browser.user_agent_size_limit = 4096
 Browser.accept_language_size_limit = 4096
 ```
 
+## Performance
+
+`bench/request.rb` replays what a web request asks (name, version, `bot?`, platform, device, accept-language) over
+2,000 distinct user agents of the corpus and over 20 repeated ones, median of 7. On Ruby 4.0.9 with YJIT, browser
+6.2.0 takes 110 µs and 245 objects per request, BrowserX 1.0.0 61 µs and 129 objects.
+
+```bash
+ruby --yjit -I path/to/upstream/lib bench/request.rb
+ruby --yjit -I lib bench/request.rb
+```
+
 ## Development
 
 ```bash
 bundle install
 bundle exec rake test
+bundle exec rubocop
 ```
 
 A change that is not meant to change an answer proves it on the corpus of 20,000 user agents, against a plain
@@ -399,4 +417,8 @@ lowercased string the user agent contains. A search engine goes in `test/ua_sear
 
 ## License
 
-MIT, see [LICENSE.md](LICENSE.md). Copyright (c) 2010 Nando Vieira, 2026 Level UP Solutions.
+MIT, by Level UP Solutions, see [LICENSE.md](LICENSE.md). Originally written by Nando Vieira as
+[fnando/browser](https://github.com/fnando/browser) (MIT). The corpus gathers user agents from
+[ua-parser/uap-core](https://github.com/ua-parser/uap-core) (Apache 2.0),
+[crawler-user-agents](https://github.com/monperrus/crawler-user-agents) (MIT) and browser's test fixtures: see
+[corpus/SOURCES.md](corpus/SOURCES.md).

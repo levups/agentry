@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BrowserX Guide</title>
+<meta name="description" content="Install BrowserX, migrate from the browser gem, detect browsers, bots, devices and platforms, and use it in Rails and Rack.">
+<meta name="theme-color" content="#0b7a6f">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Inter+Tight:wght@400;600&family=Fira+Code&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to content</a>
+<div class="page">
+  <nav class="site-nav" aria-label="Site">
+    <a class="brand" href="./">BrowserX</a>
+    <a href="guide.html" aria-current="page">Guide</a>
+    <a href="bots.html">Bots</a>
+    <a href="benchmarks.html">Benchmarks</a>
+    <a href="https://github.com/next-gen-gems/browserx">GitHub</a>
+  </nav>
+
+  <main id="content">
+    <header>
+      <h1 class="page-title">Guide</h1>
+      <p class="lede">BrowserX keeps the API of the browser gem, predicate for predicate. Installing it is swapping a gem; this page covers the rest.</p>
+      <ul class="toc">
+        <li><a href="#installation">Installation</a></li>
+        <li><a href="#migrating">Migrating from browser</a></li>
+        <li><a href="#usage">Usage</a></li>
+        <li><a href="#options">Options</a></li>
+        <li><a href="#rails">Rails</a></li>
+        <li><a href="#middleware">Middleware</a></li>
+        <li><a href="#accept-language">Accept-Language</a></li>
+        <li><a href="#quirks">Internet Explorer and Safari</a></li>
+      </ul>
+    </header>
+
+    <section id="installation" aria-labelledby="installation-title">
+      <h2 id="installation-title">Installation</h2>
+      <div class="prose">
+<pre><code>gem "browserx"</code></pre>
+        <p>BrowserX requires Ruby 3.3 or later. It is tested on Rails 8.0 and 8.1, and works without Rails.</p>
+      </div>
+    </section>
+
+    <section id="migrating" aria-labelledby="migrating-title">
+      <h2 id="migrating-title">Migrating from browser</h2>
+      <div class="prose">
+        <p>Change one line of the Gemfile, nothing else:</p>
+<pre><code>- gem "browser"
++ gem "browserx"</code></pre>
+        <p>The gem still loads with <code>require "browser"</code>, still defines <code>Browser</code>, and <code>require "browser/aliases"</code> or <code>require: "browser/browser"</code> keep the meaning they had. BrowserX 1.0.0 is forked from browser 6.2.0 (<code>dd88933</code>), and a change that is not meant to change an answer is diffed against that version on the 20,328 user agents of <a href="bots.html#corpus">the corpus</a>.</p>
+        <p>To roll back, put <code>gem "browser"</code> back: 1.0.0 adds no option of its own, so no call site depends on BrowserX.</p>
+        <p>What comes next — a per-user-agent cache, bot categories, verified crawler IPs, Cloudflare headers and Client Hints — is tracked in the <a href="https://github.com/next-gen-gems/browserx/issues">GitHub issues</a>. Each will be an addition; no existing predicate changes meaning.</p>
+      </div>
+    </section>
+
+    <section id="usage" aria-labelledby="usage-title">
+      <h2 id="usage-title">Usage</h2>
+      <div class="prose">
+<pre><code>require "browser"
+
+browser = Browser.new("Some User Agent", accept_language: "en-us")</code></pre>
+
+        <h3>Browser</h3>
+<pre><code>browser.name                 # readable browser name
+browser.version              # major version number
+browser.full_version
+browser.to_s                 # the meta info joined by space
+browser.meta                 # an array with several attributes
+browser.known?               # has the browser been successfully detected?
+browser.unknown?             # the browser wasn't detected
+browser.webkit?
+browser.webkit_full_version
+browser.chromium_based?
+browser.chrome?
+browser.edge?                # newest MS browser
+browser.electron?            # Electron Framework
+browser.firefox?
+browser.ie?
+browser.ie?(6)               # detect specific IE version
+browser.ie?([">8", "<10"])   # detect specific IE (IE9)
+browser.opera?
+browser.opera_mini?
+browser.safari?
+browser.safari_webapp_mode?
+browser.samsung_browser?
+browser.core_media?
+browser.duck_duck_go?
+browser.epiphany?
+browser.nokia?
+browser.phantom_js?
+browser.qq?
+browser.quicktime?
+browser.sougou_browser?
+browser.sputnik?
+browser.uc_browser?
+browser.wechat?
+browser.weibo?
+browser.yandex?</code></pre>
+        <p>Version predicates take a version or a list of constraints, so a “modern browser” check is a method of yours:</p>
+<pre><code>def modern_browser?(browser)
+  [
+    browser.chrome?("&gt;= 65"),
+    browser.safari?("&gt;= 10"),
+    browser.firefox?("&gt;= 52"),
+    browser.ie?("&gt;= 11") &amp;&amp; !browser.compatibility_view?,
+    browser.edge?("&gt;= 15"),
+    browser.opera?("&gt;= 50"),
+    browser.facebook? &amp;&amp;
+      browser.safari_webapp_mode? &amp;&amp;
+      browser.webkit_full_version.to_i &gt;= 602
+  ].any?
+end</code></pre>
+
+        <h3>Bots</h3>
+<pre><code>browser.bot?
+browser.bot.name
+browser.bot.search_engine?
+browser.bot.why?             # which matcher detected this user agent as a bot
+Browser::Bot.why?(user_agent)</code></pre>
+        <p>How a bot is detected, and how to change the lists, is on the <a href="bots.html">Bots page</a>.</p>
+
+        <h3>Device</h3>
+<pre><code>browser.device
+browser.device.id
+browser.device.name
+browser.device.unknown?
+browser.device.mobile?
+browser.device.tablet?
+browser.device.tv?
+browser.device.console?
+browser.device.ipad?
+browser.device.iphone?
+browser.device.ipod_touch?
+browser.device.kindle?
+browser.device.kindle_fire?
+browser.device.silk?
+browser.device.surface?
+browser.device.samsung?
+browser.device.blackberry_playbook?
+browser.device.nintendo?
+browser.device.switch?
+browser.device.wii?
+browser.device.wiiu?
+browser.device.playstation?
+browser.device.ps3?
+browser.device.ps4?
+browser.device.psp?
+browser.device.vita?
+browser.device.xbox?
+browser.device.xbox_360?
+browser.device.xbox_one?</code></pre>
+
+        <h3>Platform</h3>
+<pre><code>browser.platform
+browser.platform.id
+browser.platform.name
+browser.platform.version          # e.g. 9 (for iOS 9)
+browser.platform.unknown?
+browser.platform.adobe_air?
+browser.platform.android?
+browser.platform.android?(4.2)    # detect Android Jelly Bean 4.2
+browser.platform.android_app?     # detect webview in an Android app
+browser.platform.android_webview? # alias for android_app?
+browser.platform.blackberry?
+browser.platform.blackberry?(10)  # detect specific BlackBerry version
+browser.platform.chrome_os?
+browser.platform.firefox_os?
+browser.platform.ios?
+browser.platform.ios?(9)          # detect specific iOS version
+browser.platform.ios_app?         # detect webview in an iOS app
+browser.platform.ios_webview?     # alias for ios_app?
+browser.platform.kai_os?
+browser.platform.linux?
+browser.platform.mac?
+browser.platform.windows?
+browser.platform.windows_xp?
+browser.platform.windows_vista?
+browser.platform.windows7?
+browser.platform.windows8?
+browser.platform.windows8_1?
+browser.platform.windows10?
+browser.platform.windows_rt?
+browser.platform.windows_mobile?
+browser.platform.windows_phone?
+browser.platform.windows_touchscreen_desktop?
+browser.platform.windows_wow64?
+browser.platform.windows_x64?
+browser.platform.windows_x64_inclusive?</code></pre>
+        <p>The full lists live in <a href="https://github.com/next-gen-gems/browserx/blob/main/lib/browser/platform.rb"><code>lib/browser/platform.rb</code></a> and <a href="https://github.com/next-gen-gems/browserx/blob/main/lib/browser/device.rb"><code>lib/browser/device.rb</code></a>.</p>
+
+        <h3>Aliases</h3>
+        <p>To call <code>browser.mobile?</code> and <code>browser.tablet?</code> on the base object, include the aliases:</p>
+<pre><code>require "browser/aliases"
+Browser::Base.include(Browser::Aliases)
+
+Browser.new("Some user agent").mobile? #=&gt; false</code></pre>
+      </div>
+    </section>
+
+    <section id="options" aria-labelledby="options-title">
+      <h2 id="options-title">Options</h2>
+      <table class="options">
+        <thead><tr><th scope="col">Setting</th><th scope="col">Default</th><th scope="col">What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>accept_language:</code></td><td><code>nil</code></td><td>The Accept-Language header, passed to <code>Browser.new</code>; parsed into <code>browser.accept_language</code>.</td></tr>
+          <tr><td><code>Browser.user_agent_size_limit</code></td><td>2048</td><td>Largest user agent accepted, in bytes. A larger one raises <code>Browser::Error</code>.</td></tr>
+          <tr><td><code>Browser.accept_language_size_limit</code></td><td>2048</td><td>Largest Accept-Language header accepted, in bytes. A larger one raises <code>Browser::Error</code>.</td></tr>
+          <tr><td><code>Browser::Bot.matchers</code></td><td>three built-in matchers</td><td>Callables deciding whether a user agent is a bot. See <a href="bots.html#matchers">Bots</a>.</td></tr>
+          <tr><td><code>Browser::Bot.bots</code></td><td><code>bots.yml</code></td><td>Known bots, keyed by a lowercase substring of their user agent.</td></tr>
+          <tr><td><code>Browser::Bot.search_engines</code></td><td><code>search_engines.yml</code></td><td>Bots answering <code>bot.search_engine?</code>.</td></tr>
+          <tr><td><code>Browser::Bot.bot_exceptions</code></td><td><code>bot_exceptions.yml</code></td><td>Substrings that are never a bot, even when a matcher says so.</td></tr>
+        </tbody>
+      </table>
+      <div class="prose">
+<pre><code>Browser.user_agent_size_limit = 4096
+Browser.accept_language_size_limit = 4096</code></pre>
+      </div>
+    </section>
+
+    <section id="rails" aria-labelledby="rails-title">
+      <h2 id="rails-title">Rails</h2>
+      <div class="prose">
+        <p>The Gemfile line is enough: a railtie adds a <code>browser</code> helper to controllers and views, built from the request’s <code>User-Agent</code> and <code>Accept-Language</code> headers.</p>
+<pre><code>&lt;% if browser.ie?(6) %&gt;
+  &lt;p class="disclaimer"&gt;You're running an older IE version. Please update it!&lt;/p&gt;
+&lt;% end %&gt;</code></pre>
+        <p>To use BrowserX in a Rails app without adding the helper to controllers, load only the library:</p>
+<pre><code>gem "browserx", require: "browser/browser"</code></pre>
+      </div>
+    </section>
+
+    <section id="middleware" aria-labelledby="middleware-title">
+      <h2 id="middleware-title">Middleware</h2>
+      <div class="prose">
+        <p><code>Browser::Middleware</code> redirects user agents from a Rack stack:</p>
+<pre><code>use Browser::Middleware do
+  redirect_to "/upgrade" if browser.ie?
+end</code></pre>
+        <p>In Rails, route helpers work from an initializer (<code>config/initializers/browser.rb</code>), and <code>request</code> gives the <code>Rack::Request</code>:</p>
+<pre><code>Rails.configuration.middleware.use Browser::Middleware do
+  redirect_to upgrade_path if browser.ie? &amp;&amp; request.env["PATH_INFO"] != "/exclude_me"
+end</code></pre>
+      </div>
+    </section>
+
+    <section id="accept-language" aria-labelledby="accept-language-title">
+      <h2 id="accept-language-title">Accept-Language</h2>
+      <div class="prose">
+        <p><code>browser.accept_language</code> is an array of languages, sorted by quality from highest to lowest. A missing quality means 1.0; a quality of zero means the language is not accepted.</p>
+<pre><code>language = Browser.new(user_agent, accept_language: "en-us").accept_language.first
+
+language.code    #=&gt; "en"
+language.region  #=&gt; "US"
+language.full    #=&gt; "en-US"
+language.quality #=&gt; 1.0
+language.name    #=&gt; "English/United States"</code></pre>
+      </div>
+    </section>
+
+    <section id="quirks" aria-labelledby="quirks-title">
+      <h2 id="quirks-title">Internet Explorer and Safari</h2>
+      <div class="prose">
+        <p><strong>Internet Explorer.</strong> In compatibility view, IE8 and later run as an older version. <code>version</code> and <code>full_version</code> return the navigator’s version; <code>msie_version</code> and <code>msie_full_version</code> return the engine’s.</p>
+<pre><code>browser.version             #=&gt; 11
+browser.full_version        #=&gt; 11.0
+browser.msie_version        #=&gt; 7
+browser.msie_full_version   #=&gt; 7.0
+browser.compatibility_view? #=&gt; true</code></pre>
+        <p><strong>Safari.</strong> iOS webviews and web apps are not Safari. Combine platform and WebKit detection instead:</p>
+<pre><code>browser = Browser.new("Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405")
+
+browser.safari?        #=&gt; false
+browser.webkit?        #=&gt; true
+browser.platform.ios?  #=&gt; true</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Next Gen Gems, by Level UP Solutions</span>
+    <nav aria-label="Next Gen Gems">
+      <a href="https://next-gen-gems.github.io/slimx/">SlimX</a>
+      <a href="https://next-gen-gems.github.io/browserx/" aria-current="page">BrowserX</a>
+      <a href="https://next-gen-gems.github.io/prawnx/">PrawnX</a>
+      <a href="https://next-gen-gems.github.io/gretelx/">GretelX</a>
+    </nav>
+    <a href="https://github.com/next-gen-gems/browserx">Source on GitHub</a>
+    <span>MIT license, originally written by Nando Vieira as <a href="https://github.com/fnando/browser">browser</a></span>
+  </footer>
+</div>
+</body>
+</html>

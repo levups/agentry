@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BrowserX Benchmarks</title>
+<meta name="description" content="BrowserX against the browser gem: time and objects allocated per request, measured by bench/request.rb.">
+<meta name="theme-color" content="#0b7a6f">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Inter+Tight:wght@400;600&family=Fira+Code&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to content</a>
+<div class="page">
+  <nav class="site-nav" aria-label="Site">
+    <a class="brand" href="./">BrowserX</a>
+    <a href="guide.html">Guide</a>
+    <a href="bots.html">Bots</a>
+    <a href="benchmarks.html" aria-current="page">Benchmarks</a>
+    <a href="https://github.com/next-gen-gems/browserx">GitHub</a>
+  </nav>
+
+  <main id="content">
+    <header>
+      <h1 class="page-title">Benchmarks</h1>
+      <p class="lede">One benchmark, the shape of a web request, run against browser 6.2.0 and BrowserX 1.0.0.</p>
+      <ul class="toc">
+        <li><a href="#request">Per request</a></li>
+        <li><a href="#why">Why it is faster</a></li>
+        <li><a href="#reproduce">Reproduce</a></li>
+      </ul>
+    </header>
+
+    <section id="request" aria-labelledby="request-title">
+      <h2 id="request-title">Per request</h2>
+      <p class="note">Ruby 4.0.9 with YJIT, median of 7 runs.</p>
+      <table class="options">
+        <thead><tr><th scope="col">Gem</th><th scope="col" class="number">Time per request</th><th scope="col" class="number">Objects per request</th></tr></thead>
+        <tbody>
+          <tr><td>browser 6.2.0</td><td class="number">110 µs</td><td class="number">245</td></tr>
+          <tr><td>BrowserX 1.0.0</td><td class="number">61 µs</td><td class="number">129</td></tr>
+        </tbody>
+      </table>
+      <div class="prose">
+        <p><code>bench/request.rb</code> asks each user agent what a web request asks: the browser’s name and full version, <code>bot?</code> and the bot’s name, the platform’s name and version, <code>device.mobile?</code>, <code>device.tablet?</code> and the first accepted language. It runs over 2,000 distinct user agents sampled from <a href="bots.html#corpus">the corpus</a>, then over 20 of them repeated.</p>
+      </div>
+    </section>
+
+    <section id="why" aria-labelledby="why-title">
+      <h2 id="why-title">Why it is faster</h2>
+      <div class="prose">
+        <p><strong>Bots.</strong> browser matches the user agent against the bot list one entry at a time. BrowserX nests the list by common prefix into one regexp, which follows a single branch per character, and rebuilds it only when the list grows or is replaced.</p>
+        <p><strong>No second detection.</strong> The built-in bot matchers ignore the browser, so <code>bot?</code> no longer builds a second <code>Browser</code> for the same user agent. Custom matchers still receive one.</p>
+        <p><strong>Lazy matchers.</strong> Platform and device matchers are built only when a request asks for the platform or the device.</p>
+      </div>
+    </section>
+
+    <section id="reproduce" aria-labelledby="reproduce-title">
+      <h2 id="reproduce-title">Reproduce</h2>
+      <div class="prose">
+        <p>Run it without JIT and with <code>--yjit</code>, for upstream and for BrowserX, one at a time on an otherwise idle machine. <code>path/to/upstream</code> is a plain clone of <a href="https://github.com/fnando/browser">fnando/browser</a> at <code>dd88933</code>.</p>
+<pre><code>ruby --yjit -I path/to/upstream/lib bench/request.rb
+ruby --yjit -I lib bench/request.rb</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Next Gen Gems, by Level UP Solutions</span>
+    <nav aria-label="Next Gen Gems">
+      <a href="https://next-gen-gems.github.io/slimx/">SlimX</a>
+      <a href="https://next-gen-gems.github.io/browserx/" aria-current="page">BrowserX</a>
+      <a href="https://next-gen-gems.github.io/prawnx/">PrawnX</a>
+      <a href="https://next-gen-gems.github.io/gretelx/">GretelX</a>
+    </nav>
+    <a href="https://github.com/next-gen-gems/browserx">Source on GitHub</a>
+    <span>MIT license, originally written by Nando Vieira as <a href="https://github.com/fnando/browser">browser</a></span>
+  </footer>
+</div>
+</body>
+</html>
