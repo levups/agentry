@@ -14,7 +14,9 @@ Gem::Specification.new do |s|
   s.required_ruby_version = ">= 3.3"
 
   s.metadata["rubygems_mfa_required"] = "true"
+  s.metadata["source_code_uri"] = "https://github.com/next-gen-gems/browserx"
   s.metadata["changelog_uri"] = "https://github.com/next-gen-gems/browserx/blob/main/CHANGELOG.md"
+  s.metadata["documentation_uri"] = "https://next-gen-gems.github.io/browserx/"
 
   s.files = Dir["lib/**/*.rb", "*.yml", "test/ua*.yml",
     "README.md", "LICENSE.md", "CHANGELOG.md"]
