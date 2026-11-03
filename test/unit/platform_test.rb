@@ -31,7 +31,7 @@ class PlatformTest < Minitest::Test
   test "implements ==" do
     platform = Browser::Platform.new(Browser["IOS9"])
 
-    assert_operator platform, :==, :ios # rubocop:disable Minitest/AssertEqual
+    assert_operator platform, :==, :ios
     refute_equal platform, :android
   end
 

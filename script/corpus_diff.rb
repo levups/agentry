@@ -13,12 +13,12 @@ def flatten(row, prefix = nil)
 end
 
 def read_snapshot(path)
-  File.foreach(path).map {|line| JSON.parse(line) }
+  File.foreach(path).map { |line| JSON.parse(line) }
 end
 
 expected_rows = read_snapshot(ARGV.fetch(0))
 actual_rows = read_snapshot(ARGV.fetch(1))
-differences = Hash.new {|hash, key| hash[key] = [] }
+differences = Hash.new { |hash, key| hash[key] = [] }
 expected_rows.zip(actual_rows).each do |expected, actual|
   expected_answers = flatten(expected)
   actual_answers = flatten(actual)
@@ -33,7 +33,7 @@ end
 if differences.empty?
   puts "#{expected_rows.size} user agents, identical answers"
 else
-  differences.sort_by {|_path, cases| -cases.size }.each do |path, cases|
+  differences.sort_by { |_path, cases| -cases.size }.each do |path, cases|
     puts "#{path}: #{cases.size} differences"
     cases.first(3).each do |user_agent, expected, actual|
       puts "  #{expected.inspect} → #{actual.inspect}  #{user_agent[0, 120]}"

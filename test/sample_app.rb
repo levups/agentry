@@ -31,7 +31,7 @@ class SampleApp < Rails::Application
     default_headers = {"Content-Type" => "text/html"}
 
     root to: ->(_env) { [200, default_headers, ["ROOT"]] }
-    get "upgrade", to: lambda {|env|
+    get "upgrade", to: lambda { |env|
       browser = Rack::Request.new(env).params["browser"]
       [200, default_headers, ["UPGRADE: #{browser}"]]
     }, as: "upgrade"
