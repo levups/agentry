@@ -28,9 +28,18 @@ A change meant to change answers (a fresher bot list) lists the differences it e
 ## Benchmark
 
 `bench/request.rb` replays a web request's questions (name, version, `bot?`, platform, device, accept-language)
-over 2,000 distinct user agents and 20 repeated ones, median of 7. Run upstream and branch, without JIT and with
-`--yjit`, one at a time on an idle machine: `ruby --yjit -I lib bench/request.rb`. Ruby 4.0.9, YJIT: browser
-6.2.0 110 µs / 245 objects per request, BrowserX 1.0.0 61 µs / 129 objects.
+over 2,000 distinct user agents and 20 repeated ones, median of 7. `bundle exec rake bench UPSTREAM=path/to/upstream`
+runs upstream and BrowserX, without JIT and with `--yjit`, one at a time: run it on an idle machine. Ruby 4.0.9,
+YJIT, Apple M4 Max: browser 6.2.0 126 µs / 245 objects per request, BrowserX 25 µs / 52 objects on a new user
+agent, 2 µs / 12 objects on a repeated one.
+
+## The site
+
+`docs/` is the GitHub Pages site. Its numbers sit between `<!-- render:name -->` markers, rewritten by
+`script/render_docs.rb` from `docs/benchmarks.json` (`bench/request.rb --write`), `docs/bot_coverage.json`
+(`script/bot_coverage.rb`, the weekly sync), the bot lists and `corpus/expected_differences.jsonl`: never type a
+number there, CI's docs job fails when a page differs from what `rake docs:render` writes. A new code block needs
+`rake docs:highlight`.
 
 ## Data source licences
 

@@ -29,4 +29,26 @@ namespace :docs do
   task "highlight:check" do
     ruby "script/highlight_docs.rb", "--check"
   end
+
+  desc "Render the numbers of docs/*.html from docs/benchmarks.json and docs/bot_coverage.json"
+  task :render do
+    ruby "script/render_docs.rb"
+  end
+
+  desc "Fail if a number of docs/*.html is not rendered from its JSON file"
+  task "render:check" do
+    ruby "script/render_docs.rb", "--check"
+  end
+end
+
+desc "Benchmark fnando/browser (UPSTREAM=path/to/upstream) and BrowserX into docs/benchmarks.json, then render it"
+task :bench do
+  upstream_lib = File.join(ENV.fetch("UPSTREAM") { abort "UPSTREAM=path/to/a clone of fnando/browser at dd88933" }, "lib")
+  # Outside the bundle, or bundler/setup would put BrowserX's lib on upstream's load path.
+  Bundler.with_unbundled_env do
+    [["--yjit"], []].each do |jit|
+      [upstream_lib, "lib"].each { |lib| ruby(*jit, "-I", lib, "bench/request.rb", "--write") }
+    end
+  end
+  Rake::Task["docs:render"].invoke
 end

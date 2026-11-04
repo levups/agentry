@@ -1,12 +1,16 @@
 # BrowserX
 
-Browser detection for Ruby, with ActionController integration. BrowserX is a drop-in replacement for the
-[browser](https://rubygems.org/gems/browser) gem: put `gem "browserx"` in your Gemfile instead of
-`gem "browser"`, and every call site keeps working — same `Browser` namespace, same `require "browser"`, same
-predicates. It answers nearly twice as fast (61 µs and 129 objects per request instead of 110 µs and 245 on
-Ruby 4.0 with YJIT), and its bot list, with categories, is synced every week from permissively licensed sources
-([crawler-user-agents](https://github.com/monperrus/crawler-user-agents),
-[ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt)).
+Browser detection for Ruby, with ActionController integration: the API of the
+[browser](https://rubygems.org/gems/browser) gem, faster, and a bot list that stays fresh. Put `gem "browserx"` in
+your Gemfile instead of `gem "browser"`, and every call site keeps working — same `Browser` namespace, same
+`require "browser"`, same predicates.
+
+- **Faster**: 25 µs per request instead of 126 µs with browser 6.2.0, 2 µs once a user agent was seen (Ruby 4.0.9,
+  YJIT, `bench/request.rb`).
+- **Fresher bots**: synced every week from [crawler-user-agents](https://github.com/monperrus/crawler-user-agents)
+  and [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt), with categories (`bot.category`, `bot.ai?`).
+  Of the 882 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out),
+  browser misses 353, BrowserX 11.
 
 Site: https://next-gen-gems.github.io/browserx/
 
@@ -191,8 +195,15 @@ end
 
 Replace `gem "browser"` with `gem "browserx"` in the Gemfile, nothing else: `require "browser"`, the `Browser`
 namespace and every predicate stay. Both gems define `Browser`, so BrowserX refuses to load next to `browser`,
-with an error saying so, rather than letting one silently override the other. To roll back, put `gem "browser"`
-back. BrowserX requires Ruby 3.3 or later and is tested on Rails 8.0 and 8.1.
+with an error saying so, rather than letting one silently override the other. BrowserX requires Ruby 3.3 or later
+and is tested on Rails 8.0 and 8.1.
+
+What changes on its own: the bots of the weekly sync are bots from the day you switch (600 user agents of the
+corpus that browser took for humans), so analytics that leave bots out count fewer visitors from that day; 792
+user agents named `Generic Bot` get a name; no browser, platform or device answer moves, and test drivers stay out
+of `bot?`. To roll back, put `gem "browser"` back, after removing the calls to what browser lacks
+(`Browser.cache_size=`, `bot.category`, `bot.ai?`, `bot.user_triggered?`). The
+[migration guide](https://next-gen-gems.github.io/browserx/guide.html#migrating) has the details.
 
 ### Rails integration
 
@@ -317,7 +328,9 @@ following requirements will be considered a bot.
 Every week, `script/sync_bots.rb` adds the bots of
 [crawler-user-agents](https://github.com/monperrus/crawler-user-agents) and
 [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) (both MIT) to the end of `bots.yml`, and
-categorizes them in `bot_categories.yml`, through a pull request that lists the answers that change.
+categorizes them in `bot_categories.yml`, through a pull request that lists the answers that change. How many of
+those lists' bots browser and BrowserX detect, per category, is on the
+[Bots page](https://next-gen-gems.github.io/browserx/bots.html#coverage).
 
 `browser.bot.category` names what the bot declares it is, with the names of Cloudflare's verified bot categories
 where one fits (`search_engine_crawler`, `ai_crawler`, `ai_search`, `ai_assistant`, `page_preview`,
@@ -423,12 +436,16 @@ Browser.cache_size = 5_000 # 0 turns it off
 
 `bench/request.rb` replays what a web request asks (name, version, `bot?`, platform, device, accept-language) over
 2,000 distinct user agents of the corpus and over 20 repeated ones, median of 7. On Ruby 4.0.9 with YJIT, browser
-6.2.0 takes 110 µs and 245 objects per request, BrowserX 1.0.0 61 µs and 129 objects.
+6.2.0 takes 126 µs and 245 objects per request, BrowserX 25 µs and 52 objects on a new user agent, 2 µs and 12
+objects on a repeated one. All four runs, with and without YJIT, are on the
+[benchmarks page](https://next-gen-gems.github.io/browserx/benchmarks.html).
 
 ```bash
-ruby --yjit -I path/to/upstream/lib bench/request.rb
-ruby --yjit -I lib bench/request.rb
+bundle exec rake bench UPSTREAM=path/to/upstream # fnando/browser at dd88933
 ```
+
+It runs `ruby [--yjit] -I lib bench/request.rb --write` for each gem and JIT, which records the run (gem, commit,
+Ruby, YJIT, machine, date) in `docs/benchmarks.json`, then `rake docs:render` rewrites the site's numbers from it.
 
 ## Development
 
@@ -455,7 +472,12 @@ The weekly bot sync (`.github/workflows/bot-sync.yml`) runs the same steps by ha
 ```bash
 ruby script/sync_bots.rb                         # bots.yml and bot_categories.yml
 ruby script/bot_coverage.rb path/to/upstream/lib # docs/bot_coverage.json, and its Markdown table
+ruby script/render_docs.rb                       # the site's numbers, from docs/*.json and the lists
 ```
+
+The numbers of `docs/*.html` sit between `<!-- render:… -->` markers and come from `docs/benchmarks.json`,
+`docs/bot_coverage.json`, the bot lists and `corpus/expected_differences.jsonl`: CI fails when a page differs from
+what `bundle exec rake docs:render` writes.
 
 To add a bot, add its user agent to `test/ua_bots.yml` and its readable name to `bots.yml` above the synced
 section, keyed by a lowercased string the user agent contains. A search engine goes in `test/ua_search_engines.yml`,
