@@ -10,7 +10,8 @@ module Browser
 
         @browser = Browser.new(
           request.user_agent,
-          accept_language: request.env["HTTP_ACCEPT_LANGUAGE"]
+          accept_language: request.env["HTTP_ACCEPT_LANGUAGE"],
+          headers: request.env
         )
       end
 

@@ -13,7 +13,8 @@ module Browser
     private def browser
       @browser ||= Browser.new(
         request.headers["User-Agent"],
-        accept_language: request.headers["Accept-Language"]
+        accept_language: request.headers["Accept-Language"],
+        headers: request.env
       )
     end
   end

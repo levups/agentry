@@ -3,6 +3,7 @@
 # Compares two snapshots from script/corpus_snapshot.rb. Passes when every
 # answer that differs is listed in corpus/expected_differences.jsonl, and
 # every listed one differs: a fresher bot list changes answers on purpose.
+# A method the first snapshot lacks is an addition, not a changed answer.
 #   ruby script/corpus_diff.rb upstream.jsonl browserx.jsonl
 #   ruby script/corpus_diff.rb --write upstream.jsonl browserx.jsonl # lists them
 require "json"
@@ -39,7 +40,7 @@ differences = []
 expected_rows.zip(actual_rows).each do |expected, actual|
   expected_answers = flatten(expected)
   actual_answers = flatten(actual)
-  (expected_answers.keys | actual_answers.keys).each do |path|
+  expected_answers.each_key do |path|
     next if expected_answers[path] == actual_answers[path]
 
     differences << {"path" => path, "ua" => expected["ua"],

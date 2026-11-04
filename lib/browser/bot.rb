@@ -167,6 +167,24 @@ module Browser
       USER_TRIGGERED_CATEGORIES.include?(category)
     end
 
+    # The owner publishing the IP ranges of the crawler this user agent claims
+    # to be (:google, :bing, :openai, :apple, :perplexity, :duckduckgo).
+    def owner
+      return unless bot?
+
+      @owner = IPRanges.owner(ua) unless defined?(@owner)
+      @owner
+    end
+
+    # Whether the IP belongs to the owner's published ranges. reverse_dns: true
+    # also asks the DNS for an IP outside them (Google, Bing and Apple): two
+    # network queries.
+    def verified?(ip, reverse_dns: false)
+      return false unless owner
+
+      IPRanges.include?(owner, ip) || (reverse_dns && IPRanges.verified_by_dns?(owner, ip))
+    end
+
     private def known_bot_keyword
       rank = self.class.known_bot_rank(ua)
       self.class.known_bots_trie[:keywords][rank] if rank

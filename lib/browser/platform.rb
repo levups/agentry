@@ -41,15 +41,23 @@ module Browser
       ]
     end
 
-    def initialize(ua)
+    def initialize(ua, client_hints: nil)
       @ua = ua
+      @client_hints = client_hints
+    end
+
+    # This platform, or one built with the client hints when they tell more
+    # than the user agent: the cached platform of a user agent ignores them.
+    def with_client_hints(client_hints)
+      hinted_class = client_hints.platform_class
+      return self unless hinted_class
+      return self if subject.instance_of?(hinted_class) && client_hints.platform_version.nil?
+
+      self.class.new(ua, client_hints:)
     end
 
     def subject
-      @subject ||= self.class.matchers.each do |matcher|
-        candidate = matcher.new(ua, self)
-        break candidate if candidate.match?
-      end
+      @subject ||= @client_hints&.platform_class&.new(ua, self) || detect_subject
     end
 
     def adobe_air?(expected_version = nil)
@@ -109,7 +117,7 @@ module Browser
     end
 
     def version
-      subject.version
+      @version ||= hinted_version || subject.version
     end
 
     def name
@@ -163,7 +171,12 @@ module Browser
     end
 
     def windows10?
-      windows? && ua.include?("Windows NT 10")
+      windows? && ua.include?("Windows NT 10") && !windows11?
+    end
+
+    # Only the client hints tell Windows 11 apart (ClientHints#windows11?).
+    def windows11?
+      windows? && version == "11"
     end
 
     def windows_rt?
@@ -185,6 +198,20 @@ module Browser
 
     def windows_touchscreen_desktop?
       windows? && ua.include?("Touch")
+    end
+
+    private def detect_subject
+      self.class.matchers.each do |matcher|
+        candidate = matcher.new(ua, self)
+        break candidate if candidate.match?
+      end
+    end
+
+    private def hinted_version
+      return unless @client_hints&.platform_class
+      return @client_hints.platform_version unless id == :windows
+
+      "11" if @client_hints.windows11?
     end
 
     private :subject

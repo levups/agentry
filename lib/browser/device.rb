@@ -53,9 +53,19 @@ module Browser
       ]
     end
 
-    def initialize(ua, platform: nil)
+    def initialize(ua, platform: nil, client_hints: nil)
       @ua = ua
       @platform = platform
+      @client_hints = client_hints
+    end
+
+    # This device, or one built with the client hints when Sec-CH-UA-Mobile or
+    # the platform they gave change its answers.
+    def with_client_hints(client_hints, platform:)
+      mobile = client_hints.mobile?
+      return self if platform.equal?(self.platform) && (mobile.nil? || mobile == detect_mobile?)
+
+      self.class.new(ua, platform:, client_hints:)
     end
 
     def subject
@@ -214,7 +224,8 @@ module Browser
     private def detect_mobile?
       return @detect_mobile if defined?(@detect_mobile)
 
-      @detect_mobile = psp? || /zunewp7|crios/i.match?(ua) || mobile_user_agent?
+      mobile = @client_hints&.mobile?
+      @detect_mobile = mobile.nil? ? psp? || /zunewp7|crios/i.match?(ua) || mobile_user_agent? : mobile
     end
 
     private def mobile_user_agent?
