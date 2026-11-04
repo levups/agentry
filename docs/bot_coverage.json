@@ -1,0 +1,120 @@
+{
+  "upstream": "fnando/browser dd88933",
+  "sources": [
+    "https://raw.githubusercontent.com/monperrus/crawler-user-agents/master/crawler-user-agents.json",
+    "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json"
+  ],
+  "categories": [
+    {
+      "category": "academic_research",
+      "user_agents": 35,
+      "upstream_bots": 24,
+      "browserx_bots": 35,
+      "browserx_categorized": 34
+    },
+    {
+      "category": "advertising_and_marketing",
+      "user_agents": 97,
+      "upstream_bots": 78,
+      "browserx_bots": 94,
+      "browserx_categorized": 94
+    },
+    {
+      "category": "ai_agent",
+      "user_agents": 35,
+      "upstream_bots": 12,
+      "browserx_bots": 21,
+      "browserx_categorized": 28
+    },
+    {
+      "category": "ai_assistant",
+      "user_agents": 35,
+      "upstream_bots": 19,
+      "browserx_bots": 34,
+      "browserx_categorized": 34
+    },
+    {
+      "category": "ai_crawler",
+      "user_agents": 186,
+      "upstream_bots": 150,
+      "browserx_bots": 183,
+      "browserx_categorized": 183
+    },
+    {
+      "category": "ai_search",
+      "user_agents": 45,
+      "upstream_bots": 36,
+      "browserx_bots": 44,
+      "browserx_categorized": 43
+    },
+    {
+      "category": "archiver",
+      "user_agents": 68,
+      "upstream_bots": 50,
+      "browserx_bots": 68,
+      "browserx_categorized": 68
+    },
+    {
+      "category": "browser_automation",
+      "user_agents": 23,
+      "upstream_bots": 2,
+      "browserx_bots": 2,
+      "browserx_categorized": 21
+    },
+    {
+      "category": "feed_fetcher",
+      "user_agents": 92,
+      "upstream_bots": 40,
+      "browserx_bots": 91,
+      "browserx_categorized": 91
+    },
+    {
+      "category": "http_library",
+      "user_agents": 103,
+      "upstream_bots": 68,
+      "browserx_bots": 102,
+      "browserx_categorized": 102
+    },
+    {
+      "category": "monitoring_and_analytics",
+      "user_agents": 260,
+      "upstream_bots": 141,
+      "browserx_bots": 258,
+      "browserx_categorized": 256
+    },
+    {
+      "category": "page_preview",
+      "user_agents": 136,
+      "upstream_bots": 110,
+      "browserx_bots": 135,
+      "browserx_categorized": 133
+    },
+    {
+      "category": "scanner",
+      "user_agents": 108,
+      "upstream_bots": 46,
+      "browserx_bots": 106,
+      "browserx_categorized": 106
+    },
+    {
+      "category": "search_engine_crawler",
+      "user_agents": 418,
+      "upstream_bots": 384,
+      "browserx_bots": 417,
+      "browserx_categorized": 406
+    },
+    {
+      "category": "search_engine_optimization",
+      "user_agents": 685,
+      "upstream_bots": 481,
+      "browserx_bots": 674,
+      "browserx_categorized": 671
+    }
+  ],
+  "total": {
+    "user_agents": 2326,
+    "upstream_bots": 1641,
+    "browserx_bots": 2264,
+    "browserx_categorized": 2270
+  }
+}

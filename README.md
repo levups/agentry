@@ -4,7 +4,7 @@ Browser detection for Ruby, with ActionController integration. BrowserX is a dro
 [browser](https://rubygems.org/gems/browser) gem: put `gem "browserx"` in your Gemfile instead of
 `gem "browser"`, and every call site keeps working — same `Browser` namespace, same `require "browser"`, same
 predicates. It answers nearly twice as fast (61 µs and 129 objects per request instead of 110 µs and 245 on
-Ruby 4.0 with YJIT), and its bot list is meant to be kept fresh from permissively licensed sources
+Ruby 4.0 with YJIT), and its bot list, with categories, is synced every week from permissively licensed sources
 ([crawler-user-agents](https://github.com/monperrus/crawler-user-agents),
 [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt)).
 
@@ -64,6 +64,9 @@ browser.epiphany?
 # Get bot info
 browser.bot.name
 browser.bot.search_engine?
+browser.bot.category        # :ai_crawler, :search_engine_crawler, :scanner… (nil for a browser)
+browser.bot.ai?
+browser.bot.user_triggered? # an AI agent acting for a person right now (ChatGPT-User, Claude-User)
 browser.bot?
 browser.bot.why? # shows which matcher detected this user agent as a bot.
 Browser::Bot.why?(ua)
@@ -311,6 +314,25 @@ following requirements will be considered a bot.
 - Any known bot listed under
   [bots.yml](bots.yml)
 
+Every week, `script/sync_bots.rb` adds the bots of
+[crawler-user-agents](https://github.com/monperrus/crawler-user-agents) and
+[ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) (both MIT) to the end of `bots.yml`, and
+categorizes them in `bot_categories.yml`, through a pull request that lists the answers that change.
+
+`browser.bot.category` names what the bot declares it is, with the names of Cloudflare's verified bot categories
+where one fits (`search_engine_crawler`, `ai_crawler`, `ai_search`, `ai_assistant`, `page_preview`,
+`feed_fetcher`, `monitoring_and_analytics`, `advertising_and_marketing`, `archiver`, `security`…), plus
+`ai_agent`, `http_library`, `scanner` and `browser_automation`. `bot.ai?` is true for the four AI categories,
+`bot.user_triggered?` for `ai_assistant` and `ai_agent`. The category is `nil` for a browser, a bot exception
+and a bot no list names.
+
+HTTP libraries (`curl`, `got`, `python-requests`) and scanners (sqlmap, Nikto, Censys) are bots, as `curl` and
+`python-requests` already were in browser. Test drivers (headless Chrome, Playwright, Puppeteer, Selenium) are
+not: an app's system tests drive a real browser through them, and the headless Chrome of Playwright and Selenium
+sends `HeadlessChrome`. They get the `browser_automation` category instead, so an app can tell them apart in
+production (`browser.bot? || browser.bot.category == :browser_automation`). PhantomJS stays a bot, as in
+browser.
+
 To add custom matchers, you can add a callable object to
 `Browser::Bot.matchers`. The following example matches everything that has a
 `externalhit` substring on it. The bot name will always be `General Bot`.
@@ -340,6 +362,7 @@ To extend the bot list, you can manipulate the methods below:
 Browser::Bot.bots.merge!(new_bots_hash)
 Browser::Bot.bot_exceptions += new_exceptions
 Browser::Bot.search_engines.merge!(new_search_engines_hash)
+Browser::Bot.category_by_keyword["faraday"] = :http_library
 ```
 
 ### Middleware
@@ -424,8 +447,18 @@ ruby -I lib script/corpus_snapshot.rb > /tmp/browserx.jsonl
 ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/browserx.jsonl
 ```
 
-To add a bot, add its user agent to `test/ua_bots.yml` and its readable name to `bots.yml`, keyed by a
-lowercased string the user agent contains. A search engine goes in `test/ua_search_engines.yml`,
+The diff passes when the answers that differ are exactly those of `corpus/expected_differences.jsonl`: a change
+meant to change answers rewrites it with `ruby script/corpus_diff.rb --write …` and shows its diff.
+
+The weekly bot sync (`.github/workflows/bot-sync.yml`) runs the same steps by hand:
+
+```bash
+ruby script/sync_bots.rb                         # bots.yml and bot_categories.yml
+ruby script/bot_coverage.rb path/to/upstream/lib # docs/bot_coverage.json, and its Markdown table
+```
+
+To add a bot, add its user agent to `test/ua_bots.yml` and its readable name to `bots.yml` above the synced
+section, keyed by a lowercased string the user agent contains. A search engine goes in `test/ua_search_engines.yml`,
 `test/ua_bots.yml` and `search_engines.yml`.
 
 ### Releasing
@@ -450,5 +483,7 @@ with the version's notes and the `.gem`.
 MIT, by Level UP Solutions, see [LICENSE.md](LICENSE.md). Originally written by Nando Vieira as
 [fnando/browser](https://github.com/fnando/browser) (MIT). The corpus gathers user agents from
 [ua-parser/uap-core](https://github.com/ua-parser/uap-core) (Apache 2.0),
-[crawler-user-agents](https://github.com/monperrus/crawler-user-agents) (MIT) and browser's test fixtures: see
+[crawler-user-agents](https://github.com/monperrus/crawler-user-agents) (MIT) and browser's test fixtures; the bot
+list and its categories come from [crawler-user-agents](https://github.com/monperrus/crawler-user-agents) (MIT)
+and [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) (MIT): see
 [corpus/SOURCES.md](corpus/SOURCES.md).

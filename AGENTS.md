@@ -22,8 +22,8 @@ ruby -I lib script/corpus_snapshot.rb > /tmp/browserx.jsonl
 ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/browserx.jsonl
 ```
 
-A change meant to change answers (a fresher bot list) lists the differences it expects; the diff shows exactly
-those.
+A change meant to change answers (a fresher bot list) lists the differences it expects in
+`corpus/expected_differences.jsonl` (`corpus_diff.rb --write`); the diff passes when it shows exactly those.
 
 ## Benchmark
 
@@ -44,7 +44,10 @@ over 2,000 distinct user agents and 20 repeated ones, median of 7. Run upstream 
 
 - `crawler-user-agents` calls "bot" anything that is not a human browser: crawlers, but also test drivers
   (Playwright, Puppeteer, Selenium), scripts (`curl`, `got`) and scanners. Widening `bot?` with it blindly would
-  flag the system tests of apps using BrowserX: keep the categories apart.
+  flag the system tests of apps using BrowserX: keep the categories apart. `browser_automation` never makes
+  `bot?` true; `script/sync_bots.rb` leaves out keywords that would flag a corpus browser (`IGNORED_KEYWORDS`).
+- `bots.yml` above its marker line is curated (browser's list), below it is rewritten by `script/sync_bots.rb`:
+  edit above, or the next sync drops the change.
 - `lib/browser/testing.rb` reads `test/ua*.yml` at runtime: those fixtures ship in the gem, keep them in
   `s.files`.
 

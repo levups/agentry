@@ -4,7 +4,7 @@ module Browser
   class Bot
     class KnownBotsMatcher
       def self.call(ua, _browser)
-        ua.match?(Browser::Bot.keywords_pattern(Browser::Bot.bots))
+        !Browser::Bot.known_bot_rank(ua, lowest: false).nil?
       end
     end
   end

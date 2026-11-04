@@ -1,0 +1,97 @@
+name: Bot sync
+
+# Every week, the bots that crawler-user-agents and ai.robots.txt added become a pull request: a human merges it.
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  sync:
+    name: Sync the bot lists
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+      - name: Check out fnando/browser at dd88933
+        uses: actions/checkout@v7
+        with:
+          repository: fnando/browser
+          ref: dd8893395248594ca0e4b6a3fbd221f36989b15b
+          path: upstream
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0"
+          bundler-cache: true
+      # One step per source: the next ones (crawler IP ranges) go after this one.
+      - name: Sync the user agents
+        run: ruby script/sync_bots.rb 2> >(tee "$RUNNER_TEMP/skipped.txt" >&2)
+      - name: Run the tests
+        run: bundle exec rake test
+      - name: Snapshot fnando/browser and BrowserX
+        run: |
+          ruby -I upstream/lib script/corpus_snapshot.rb > "$RUNNER_TEMP/upstream.jsonl"
+          ruby -I lib script/corpus_snapshot.rb > "$RUNNER_TEMP/browserx.jsonl"
+      - name: List the answers that change
+        run: |
+          ruby script/corpus_diff.rb "$RUNNER_TEMP/upstream.jsonl" "$RUNNER_TEMP/browserx.jsonl" > "$RUNNER_TEMP/changes.txt" || true
+          ruby script/corpus_diff.rb --write "$RUNNER_TEMP/upstream.jsonl" "$RUNNER_TEMP/browserx.jsonl"
+      - name: Count the coverage
+        run: ruby script/bot_coverage.rb upstream/lib > "$RUNNER_TEMP/coverage.md"
+      - name: Write the pull request body
+        run: |
+          {
+            echo "The bots that crawler-user-agents and ai.robots.txt added since the last sync, from \`script/sync_bots.rb\`. Review the answers that change, then merge."
+            echo
+            echo "<details><summary>Answers that change on the corpus</summary>"
+            echo
+            echo '```'
+            head -c 30000 "$RUNNER_TEMP/changes.txt"
+            echo '```'
+            echo
+            echo "</details>"
+            echo
+            echo "<details><summary>Keywords left out</summary>"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/skipped.txt"
+            echo '```'
+            echo
+            echo "</details>"
+            echo
+            echo "<details><summary>Coverage</summary>"
+            echo
+            cat "$RUNNER_TEMP/coverage.md"
+            echo
+            echo "</details>"
+          } > "$RUNNER_TEMP/body.md"
+      - name: Open the pull request
+        id: pull-request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: bot-sync
+          delete-branch: true
+          sign-commits: true
+          # upstream/ is a checkout of its own: only the synced files go in.
+          add-paths: |
+            bots.yml
+            bot_categories.yml
+            corpus/expected_differences.jsonl
+            docs/bot_coverage.json
+          commit-message: Sync the bot lists from crawler-user-agents and ai.robots.txt
+          title: "Bot list: new bots from crawler-user-agents and ai.robots.txt"
+          body-path: ${{ runner.temp }}/body.md
+      # A pull request opened with the GITHUB_TOKEN starts no workflow, but a dispatch does.
+      - name: Run the CI on the pull request
+        if: ${{ contains(fromJSON('["created", "updated"]'), steps.pull-request.outputs.pull-request-operation) }}
+        run: gh workflow run ci.yml --ref bot-sync
+        env:
+          GH_TOKEN: ${{ github.token }}

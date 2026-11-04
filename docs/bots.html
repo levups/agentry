@@ -36,6 +36,7 @@
       <p class="lede">Bot detection is deliberately aggressive: a user agent is a bot as soon as one matcher says so, unless it is a known exception.</p>
       <ul class="toc">
         <li><a href="#lists">The lists</a></li>
+        <li><a href="#categories">Categories</a></li>
         <li><a href="#matchers">Matchers</a></li>
         <li><a href="#extending">Extending the lists</a></li>
         <li><a href="#corpus">The corpus</a></li>
@@ -46,12 +47,37 @@
     <section id="lists" aria-labelledby="lists-title">
       <h2 id="lists-title">The lists</h2>
       <div class="tiles">
-        <div class="tile"><span class="tile-value">319</span><span class="tile-label">named bots</span><span class="tile-detail"><code>bots.yml</code>, keyed by a lowercase substring of the user agent</span></div>
+        <div class="tile"><span class="tile-value">1,566</span><span class="tile-label">named bots</span><span class="tile-detail"><code>bots.yml</code>, keyed by a lowercase substring of the user agent</span></div>
+        <div class="tile"><span class="tile-value">16</span><span class="tile-label">categories</span><span class="tile-detail"><code>bot_categories.yml</code>: <code>ai_crawler</code>, <code>search_engine_crawler</code>, <code>scanner</code>…</span></div>
         <div class="tile"><span class="tile-value">6</span><span class="tile-label">search engines</span><span class="tile-detail"><code>search_engines.yml</code>: Googlebot, Bingbot, Baidu, DuckDuckBot, Slurp, Ask Jeeves</span></div>
         <div class="tile"><span class="tile-value">4</span><span class="tile-label">exceptions</span><span class="tile-detail"><code>bot_exceptions.yml</code>: never a bot, whatever a matcher says</span></div>
       </div>
       <div class="prose">
         <p class="more"><code>browser.bot.name</code> is the name from <code>bots.yml</code>, or <code>Generic Bot</code> when another matcher caught it. The lists are in the <a href="https://github.com/next-gen-gems/browserx/blob/main/bots.yml">repository</a>.</p>
+        <p>Every week, <code>script/sync_bots.rb</code> rewrites the part of <code>bots.yml</code> below its marker line, and <code>bot_categories.yml</code>, from crawler-user-agents and ai.robots.txt, and a pull request shows the answers that change. Above the marker, the list inherited from browser stays as it was.</p>
+      </div>
+    </section>
+
+    <section id="categories" aria-labelledby="categories-title">
+      <h2 id="categories-title">Categories</h2>
+      <div class="prose">
+        <p><code>browser.bot.category</code> names what a bot declares it is, with the names of Cloudflare’s verified bot categories where one fits, so an app can compare it with what Cloudflare verified. It is <code>nil</code> for a browser, a bot exception, and a bot no list names (caught by a keyword).</p>
+<pre><code class="language-ruby"><span class="n">browser</span> <span class="o">=</span> <span class="no">Browser</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s2">"Mozilla/5.0 (compatible; Claude-User/1.0)"</span><span class="p">)</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">category</span>        <span class="c1"># =&gt; :ai_assistant</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">ai?</span>             <span class="c1"># =&gt; true: ai_crawler, ai_search, ai_assistant or ai_agent</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">user_triggered?</span> <span class="c1"># =&gt; true: ai_assistant or ai_agent, acting for a person right now</span></code></pre>
+      </div>
+      <table class="options">
+        <thead><tr><th scope="col">Category</th><th scope="col"><code>bot?</code></th></tr></thead>
+        <tbody>
+          <tr><td><code>search_engine_crawler</code>, <code>search_engine_optimization</code>, <code>ai_crawler</code>, <code>ai_search</code>, <code>ai_assistant</code>, <code>ai_agent</code>, <code>page_preview</code>, <code>feed_fetcher</code>, <code>advertising_and_marketing</code>, <code>monitoring_and_analytics</code>, <code>archiver</code>, <code>academic_research</code>, <code>security</code></td><td>true</td></tr>
+          <tr><td><code>http_library</code>: curl, got, python-requests…</td><td>true, as <code>curl</code> and <code>python-requests</code> already were in browser: system tests don’t send them.</td></tr>
+          <tr><td><code>scanner</code>: sqlmap, Nikto, Censys…</td><td>true</td></tr>
+          <tr><td><code>browser_automation</code>: HeadlessChrome, Playwright, Puppeteer, Selenium…</td><td>false: the system tests of an app drive a real browser through them, and Playwright’s and Selenium’s headless Chrome send <code>HeadlessChrome</code>. PhantomJS stays a bot, as in browser.</td></tr>
+        </tbody>
+      </table>
+      <div class="prose">
+        <p class="more">To treat test drivers as bots in production: <code>browser.bot? || browser.bot.category == :browser_automation</code>.</p>
       </div>
     </section>
 
@@ -80,8 +106,8 @@
 <pre><code class="language-ruby"><span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">bots</span><span class="p">.</span><span class="nf">merge!</span><span class="p">(</span><span class="n">new_bots_hash</span><span class="p">)</span>
 <span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">bot_exceptions</span> <span class="o">+=</span> <span class="n">new_exceptions</span>
 <span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">search_engines</span><span class="p">.</span><span class="nf">merge!</span><span class="p">(</span><span class="n">new_search_engines_hash</span><span class="p">)</span></code></pre>
-        <p>The prefix-trie regexp behind each list is rebuilt when the list grows or is replaced. To add a bot to BrowserX itself, add its user agent to <code>test/ua_bots.yml</code> and its name to <code>bots.yml</code>; a search engine also goes in <code>test/ua_search_engines.yml</code> and <code>search_engines.yml</code>.</p>
-        <p><strong>A trap.</strong> Public crawler lists call “bot” anything that is not a human browser: crawlers, but also test drivers (Playwright, Puppeteer, Selenium), scripts and scanners. Adding them all to <code>bot?</code> would flag the system tests of the apps using it, so BrowserX keeps them out of it.</p>
+        <p>The prefix tries behind each list are rebuilt when the list grows or is replaced. <code>Browser::Bot.category_by_keyword</code> takes new categories the same way. To add a bot to BrowserX itself, add its user agent to <code>test/ua_bots.yml</code> and its name to <code>bots.yml</code>; a search engine also goes in <code>test/ua_search_engines.yml</code> and <code>search_engines.yml</code>.</p>
+        <p><strong>A trap.</strong> Public crawler lists call “bot” anything that is not a human browser: crawlers, but also test drivers (Playwright, Puppeteer, Selenium), scripts and scanners. Adding them all to <code>bot?</code> would flag the system tests of the apps using it, so test drivers get a category of their own and no <code>bot?</code>.</p>
       </div>
     </section>
 
@@ -92,7 +118,7 @@
 <pre><code class="language-sh">ruby <span class="nt">-I</span> path/to/upstream/lib script/corpus_snapshot.rb <span class="o">&gt;</span> /tmp/upstream.jsonl
 ruby <span class="nt">-I</span> lib script/corpus_snapshot.rb <span class="o">&gt;</span> /tmp/browserx.jsonl
 ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/browserx.jsonl</code></pre>
-        <p><code>path/to/upstream</code> is a plain clone of <a href="https://github.com/fnando/browser">fnando/browser</a> at <code>dd88933</code>. A change meant to change answers, like a fresher bot list, lists the differences it expects, and the diff must show exactly those.</p>
+        <p><code>path/to/upstream</code> is a plain clone of <a href="https://github.com/fnando/browser">fnando/browser</a> at <code>dd88933</code>. A change meant to change answers, like a fresher bot list, lists the differences it expects in <code>corpus/expected_differences.jsonl</code> (<code>corpus_diff.rb --write</code>), and the diff must show exactly those. No browser of uap-core turns into a bot: the sync leaves out any keyword that would flag one.</p>
       </div>
     </section>
 
@@ -105,7 +131,7 @@ ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/browserx.jsonl</code></pre>
           <li>the <code>instances</code> of <a href="https://github.com/monperrus/crawler-user-agents">monperrus/crawler-user-agents</a>, MIT;</li>
           <li>the test fixtures of <a href="https://github.com/fnando/browser">fnando/browser</a>, MIT.</li>
         </ul>
-        <p>The bot list is meant to be kept fresh from permissively licensed sources only: <a href="https://github.com/monperrus/crawler-user-agents">crawler-user-agents</a> and <a href="https://github.com/ai-robots-txt/ai.robots.txt">ai.robots.txt</a>, both MIT. Details in <a href="https://github.com/next-gen-gems/browserx/blob/main/corpus/SOURCES.md"><code>corpus/SOURCES.md</code></a>.</p>
+        <p>The bot list and its categories are synced from permissively licensed sources only: <a href="https://github.com/monperrus/crawler-user-agents">crawler-user-agents</a> and <a href="https://github.com/ai-robots-txt/ai.robots.txt">ai.robots.txt</a>, both MIT. <code>script/bot_coverage.rb</code> counts, per category, the bots of both lists that browser and BrowserX detect, into <code>docs/bot_coverage.json</code>. Details in <a href="https://github.com/next-gen-gems/browserx/blob/main/corpus/SOURCES.md"><code>corpus/SOURCES.md</code></a>.</p>
       </div>
     </section>
   </main>
