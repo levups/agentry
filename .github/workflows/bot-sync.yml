@@ -33,7 +33,7 @@ jobs:
           bundler-cache: true
       # One step per source: the next ones (crawler IP ranges) go after this one.
       - name: Sync the user agents
-        run: ruby script/sync_bots.rb 2> "$RUNNER_TEMP/skipped.txt"
+        run: ruby script/sync_bots.rb 2> >(tee "$RUNNER_TEMP/skipped.txt" >&2)
       - name: Run the tests
         run: bundle exec rake test
       - name: Snapshot fnando/browser and BrowserX
