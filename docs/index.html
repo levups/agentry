@@ -89,16 +89,16 @@
       <div class="split">
         <div>
           <p class="code-label">Gemfile</p>
-<pre><code>gem "browserx" # instead of gem "browser"</code></pre>
+<pre><code class="language-ruby"><span class="n">gem</span> <span class="s2">"browserx"</span> <span class="c1"># instead of gem "browser"</span></code></pre>
         </div>
         <div>
           <p class="code-label">Ruby</p>
-<pre><code>require "browser"
+<pre><code class="language-ruby"><span class="nb">require</span> <span class="s2">"browser"</span>
 
-browser = Browser.new(user_agent, accept_language: "en-us")
-browser.chrome?
-browser.bot?
-browser.device.mobile?</code></pre>
+<span class="n">browser</span> <span class="o">=</span> <span class="no">Browser</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">user_agent</span><span class="p">,</span> <span class="ss">accept_language: </span><span class="s2">"en-us"</span><span class="p">)</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">chrome?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">bot?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">mobile?</span></code></pre>
         </div>
       </div>
     </section>

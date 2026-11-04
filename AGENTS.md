@@ -48,6 +48,10 @@ over 2,000 distinct user agents and 20 repeated ones, median of 7. Run upstream 
 - `lib/browser/testing.rb` reads `test/ua*.yml` at runtime: those fixtures ship in the gem, keep them in
   `s.files`.
 
+## Code style
+
+Follow `STYLE.md` (naming, method size, comments, dead code): what RuboCop can't settle.
+
 ## Changelog and releases
 
 - Every user-visible change adds its line under `## [Unreleased]` in `CHANGELOG.md`, in the same PR. A release
