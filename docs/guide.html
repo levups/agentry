@@ -42,7 +42,7 @@
     <section id="installation" aria-labelledby="installation-title">
       <h2 id="installation-title">Installation</h2>
       <div class="prose">
-<pre><code>gem "browserx"</code></pre>
+<pre><code class="language-ruby"><span class="n">gem</span> <span class="s2">"browserx"</span></code></pre>
         <p>BrowserX requires Ruby 3.3 or later. It is tested on Rails 8.0 and 8.1, and works without Rails.</p>
       </div>
     </section>
@@ -51,8 +51,8 @@
       <h2 id="migrating-title">Migrating from browser</h2>
       <div class="prose">
         <p>Change one line of the Gemfile, nothing else:</p>
-<pre><code>- gem "browser"
-+ gem "browserx"</code></pre>
+<pre><code class="language-diff"><span class="gd">- gem "browser"
+</span><span class="gi">+ gem "browserx"</span></code></pre>
         <p>The gem still loads with <code>require "browser"</code>, still defines <code>Browser</code>, and <code>require "browser/aliases"</code> or <code>require: "browser/browser"</code> keep the meaning they had. BrowserX 1.0.0 is forked from browser 6.2.0 (<code>dd88933</code>), and a change that is not meant to change an answer is diffed against that version on the 20,328 user agents of <a href="bots.html#corpus">the corpus</a>.</p>
         <p>To roll back, put <code>gem "browser"</code> back: 1.0.0 adds no option of its own, so no call site depends on BrowserX.</p>
         <p>What comes next — a per-user-agent cache, bot categories, verified crawler IPs, Cloudflare headers and Client Hints — is tracked in the <a href="https://github.com/next-gen-gems/browserx/issues">GitHub issues</a>. Each will be an addition; no existing predicate changes meaning.</p>
@@ -62,144 +62,144 @@
     <section id="usage" aria-labelledby="usage-title">
       <h2 id="usage-title">Usage</h2>
       <div class="prose">
-<pre><code>require "browser"
+<pre><code class="language-ruby"><span class="nb">require</span> <span class="s2">"browser"</span>
 
-browser = Browser.new("Some User Agent", accept_language: "en-us")</code></pre>
+<span class="n">browser</span> <span class="o">=</span> <span class="no">Browser</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s2">"Some User Agent"</span><span class="p">,</span> <span class="ss">accept_language: </span><span class="s2">"en-us"</span><span class="p">)</span></code></pre>
 
         <h3>Browser</h3>
-<pre><code>browser.name                 # readable browser name
-browser.version              # major version number
-browser.full_version
-browser.to_s                 # the meta info joined by space
-browser.meta                 # an array with several attributes
-browser.known?               # has the browser been successfully detected?
-browser.unknown?             # the browser wasn't detected
-browser.webkit?
-browser.webkit_full_version
-browser.chromium_based?
-browser.chrome?
-browser.edge?                # newest MS browser
-browser.electron?            # Electron Framework
-browser.firefox?
-browser.ie?
-browser.ie?(6)               # detect specific IE version
-browser.ie?([">8", "<10"])   # detect specific IE (IE9)
-browser.opera?
-browser.opera_mini?
-browser.safari?
-browser.safari_webapp_mode?
-browser.samsung_browser?
-browser.core_media?
-browser.duck_duck_go?
-browser.epiphany?
-browser.nokia?
-browser.phantom_js?
-browser.qq?
-browser.quicktime?
-browser.sougou_browser?
-browser.sputnik?
-browser.uc_browser?
-browser.wechat?
-browser.weibo?
-browser.yandex?</code></pre>
+<pre><code class="language-ruby"><span class="n">browser</span><span class="p">.</span><span class="nf">name</span>                 <span class="c1"># readable browser name</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">version</span>              <span class="c1"># major version number</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">full_version</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">to_s</span>                 <span class="c1"># the meta info joined by space</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">meta</span>                 <span class="c1"># an array with several attributes</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">known?</span>               <span class="c1"># has the browser been successfully detected?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">unknown?</span>             <span class="c1"># the browser wasn't detected</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">webkit?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">webkit_full_version</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">chromium_based?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">chrome?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">edge?</span>                <span class="c1"># newest MS browser</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">electron?</span>            <span class="c1"># Electron Framework</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">firefox?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">ie?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">ie?</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>               <span class="c1"># detect specific IE version</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">ie?</span><span class="p">([</span><span class="s2">"&gt;8"</span><span class="p">,</span> <span class="s2">"&lt;10"</span><span class="p">])</span>   <span class="c1"># detect specific IE (IE9)</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">opera?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">opera_mini?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">safari?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">safari_webapp_mode?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">samsung_browser?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">core_media?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">duck_duck_go?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">epiphany?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">nokia?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">phantom_js?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">qq?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">quicktime?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">sougou_browser?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">sputnik?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">uc_browser?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">wechat?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">weibo?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">yandex?</span></code></pre>
         <p>Version predicates take a version or a list of constraints, so a “modern browser” check is a method of yours:</p>
-<pre><code>def modern_browser?(browser)
-  [
-    browser.chrome?("&gt;= 65"),
-    browser.safari?("&gt;= 10"),
-    browser.firefox?("&gt;= 52"),
-    browser.ie?("&gt;= 11") &amp;&amp; !browser.compatibility_view?,
-    browser.edge?("&gt;= 15"),
-    browser.opera?("&gt;= 50"),
-    browser.facebook? &amp;&amp;
-      browser.safari_webapp_mode? &amp;&amp;
-      browser.webkit_full_version.to_i &gt;= 602
-  ].any?
-end</code></pre>
+<pre><code class="language-ruby"><span class="k">def</span> <span class="nf">modern_browser?</span><span class="p">(</span><span class="n">browser</span><span class="p">)</span>
+  <span class="p">[</span>
+    <span class="n">browser</span><span class="p">.</span><span class="nf">chrome?</span><span class="p">(</span><span class="s2">"&gt;= 65"</span><span class="p">),</span>
+    <span class="n">browser</span><span class="p">.</span><span class="nf">safari?</span><span class="p">(</span><span class="s2">"&gt;= 10"</span><span class="p">),</span>
+    <span class="n">browser</span><span class="p">.</span><span class="nf">firefox?</span><span class="p">(</span><span class="s2">"&gt;= 52"</span><span class="p">),</span>
+    <span class="n">browser</span><span class="p">.</span><span class="nf">ie?</span><span class="p">(</span><span class="s2">"&gt;= 11"</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">browser</span><span class="p">.</span><span class="nf">compatibility_view?</span><span class="p">,</span>
+    <span class="n">browser</span><span class="p">.</span><span class="nf">edge?</span><span class="p">(</span><span class="s2">"&gt;= 15"</span><span class="p">),</span>
+    <span class="n">browser</span><span class="p">.</span><span class="nf">opera?</span><span class="p">(</span><span class="s2">"&gt;= 50"</span><span class="p">),</span>
+    <span class="n">browser</span><span class="p">.</span><span class="nf">facebook?</span> <span class="o">&amp;&amp;</span>
+      <span class="n">browser</span><span class="p">.</span><span class="nf">safari_webapp_mode?</span> <span class="o">&amp;&amp;</span>
+      <span class="n">browser</span><span class="p">.</span><span class="nf">webkit_full_version</span><span class="p">.</span><span class="nf">to_i</span> <span class="o">&gt;=</span> <span class="mi">602</span>
+  <span class="p">].</span><span class="nf">any?</span>
+<span class="k">end</span></code></pre>
 
         <h3>Bots</h3>
-<pre><code>browser.bot?
-browser.bot.name
-browser.bot.search_engine?
-browser.bot.why?             # which matcher detected this user agent as a bot
-Browser::Bot.why?(user_agent)</code></pre>
+<pre><code class="language-ruby"><span class="n">browser</span><span class="p">.</span><span class="nf">bot?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">name</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">search_engine?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">why?</span>             <span class="c1"># which matcher detected this user agent as a bot</span>
+<span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">why?</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)</span></code></pre>
         <p>How a bot is detected, and how to change the lists, is on the <a href="bots.html">Bots page</a>.</p>
 
         <h3>Device</h3>
-<pre><code>browser.device
-browser.device.id
-browser.device.name
-browser.device.unknown?
-browser.device.mobile?
-browser.device.tablet?
-browser.device.tv?
-browser.device.console?
-browser.device.ipad?
-browser.device.iphone?
-browser.device.ipod_touch?
-browser.device.kindle?
-browser.device.kindle_fire?
-browser.device.silk?
-browser.device.surface?
-browser.device.samsung?
-browser.device.blackberry_playbook?
-browser.device.nintendo?
-browser.device.switch?
-browser.device.wii?
-browser.device.wiiu?
-browser.device.playstation?
-browser.device.ps3?
-browser.device.ps4?
-browser.device.psp?
-browser.device.vita?
-browser.device.xbox?
-browser.device.xbox_360?
-browser.device.xbox_one?</code></pre>
+<pre><code class="language-ruby"><span class="n">browser</span><span class="p">.</span><span class="nf">device</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">id</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">name</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">unknown?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">mobile?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">tablet?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">tv?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">console?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">ipad?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">iphone?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">ipod_touch?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">kindle?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">kindle_fire?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">silk?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">surface?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">samsung?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">blackberry_playbook?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">nintendo?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">switch?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">wii?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">wiiu?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">playstation?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">ps3?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">ps4?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">psp?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">vita?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">xbox?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">xbox_360?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">xbox_one?</span></code></pre>
 
         <h3>Platform</h3>
-<pre><code>browser.platform
-browser.platform.id
-browser.platform.name
-browser.platform.version          # e.g. 9 (for iOS 9)
-browser.platform.unknown?
-browser.platform.adobe_air?
-browser.platform.android?
-browser.platform.android?(4.2)    # detect Android Jelly Bean 4.2
-browser.platform.android_app?     # detect webview in an Android app
-browser.platform.android_webview? # alias for android_app?
-browser.platform.blackberry?
-browser.platform.blackberry?(10)  # detect specific BlackBerry version
-browser.platform.chrome_os?
-browser.platform.firefox_os?
-browser.platform.ios?
-browser.platform.ios?(9)          # detect specific iOS version
-browser.platform.ios_app?         # detect webview in an iOS app
-browser.platform.ios_webview?     # alias for ios_app?
-browser.platform.kai_os?
-browser.platform.linux?
-browser.platform.mac?
-browser.platform.windows?
-browser.platform.windows_xp?
-browser.platform.windows_vista?
-browser.platform.windows7?
-browser.platform.windows8?
-browser.platform.windows8_1?
-browser.platform.windows10?
-browser.platform.windows_rt?
-browser.platform.windows_mobile?
-browser.platform.windows_phone?
-browser.platform.windows_touchscreen_desktop?
-browser.platform.windows_wow64?
-browser.platform.windows_x64?
-browser.platform.windows_x64_inclusive?</code></pre>
+<pre><code class="language-ruby"><span class="n">browser</span><span class="p">.</span><span class="nf">platform</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">id</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">name</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">version</span>          <span class="c1"># e.g. 9 (for iOS 9)</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">unknown?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">adobe_air?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">android?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">android?</span><span class="p">(</span><span class="mf">4.2</span><span class="p">)</span>    <span class="c1"># detect Android Jelly Bean 4.2</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">android_app?</span>     <span class="c1"># detect webview in an Android app</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">android_webview?</span> <span class="c1"># alias for android_app?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">blackberry?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">blackberry?</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># detect specific BlackBerry version</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">chrome_os?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">firefox_os?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">ios?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">ios?</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span>          <span class="c1"># detect specific iOS version</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">ios_app?</span>         <span class="c1"># detect webview in an iOS app</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">ios_webview?</span>     <span class="c1"># alias for ios_app?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">kai_os?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">linux?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">mac?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows_xp?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows_vista?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows7?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows8?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows8_1?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows10?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows_rt?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows_mobile?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows_phone?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows_touchscreen_desktop?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows_wow64?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows_x64?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows_x64_inclusive?</span></code></pre>
         <p>The full lists live in <a href="https://github.com/next-gen-gems/browserx/blob/main/lib/browser/platform.rb"><code>lib/browser/platform.rb</code></a> and <a href="https://github.com/next-gen-gems/browserx/blob/main/lib/browser/device.rb"><code>lib/browser/device.rb</code></a>.</p>
 
         <h3>Aliases</h3>
         <p>To call <code>browser.mobile?</code> and <code>browser.tablet?</code> on the base object, include the aliases:</p>
-<pre><code>require "browser/aliases"
-Browser::Base.include(Browser::Aliases)
+<pre><code class="language-ruby"><span class="nb">require</span> <span class="s2">"browser/aliases"</span>
+<span class="no">Browser</span><span class="o">::</span><span class="no">Base</span><span class="p">.</span><span class="nf">include</span><span class="p">(</span><span class="no">Browser</span><span class="o">::</span><span class="no">Aliases</span><span class="p">)</span>
 
-Browser.new("Some user agent").mobile? #=&gt; false</code></pre>
+<span class="no">Browser</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s2">"Some user agent"</span><span class="p">).</span><span class="nf">mobile?</span> <span class="c1">#=&gt; false</span></code></pre>
       </div>
     </section>
 
@@ -218,8 +218,8 @@ Browser.new("Some user agent").mobile? #=&gt; false</code></pre>
         </tbody>
       </table>
       <div class="prose">
-<pre><code>Browser.user_agent_size_limit = 4096
-Browser.accept_language_size_limit = 4096</code></pre>
+<pre><code class="language-ruby"><span class="no">Browser</span><span class="p">.</span><span class="nf">user_agent_size_limit</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="no">Browser</span><span class="p">.</span><span class="nf">accept_language_size_limit</span> <span class="o">=</span> <span class="mi">4096</span></code></pre>
       </div>
     </section>
 
@@ -227,11 +227,11 @@ Browser.accept_language_size_limit = 4096</code></pre>
       <h2 id="rails-title">Rails</h2>
       <div class="prose">
         <p>The Gemfile line is enough: a railtie adds a <code>browser</code> helper to controllers and views, built from the request’s <code>User-Agent</code> and <code>Accept-Language</code> headers.</p>
-<pre><code>&lt;% if browser.ie?(6) %&gt;
-  &lt;p class="disclaimer"&gt;You're running an older IE version. Please update it!&lt;/p&gt;
-&lt;% end %&gt;</code></pre>
+<pre><code class="language-erb"><span class="cp">&lt;%</span> <span class="k">if</span> <span class="n">browser</span><span class="p">.</span><span class="nf">ie?</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span> <span class="cp">%&gt;</span>
+  <span class="nt">&lt;p</span> <span class="na">class=</span><span class="s">"disclaimer"</span><span class="nt">&gt;</span>You're running an older IE version. Please update it!<span class="nt">&lt;/p&gt;</span>
+<span class="cp">&lt;%</span> <span class="k">end</span> <span class="cp">%&gt;</span></code></pre>
         <p>To use BrowserX in a Rails app without adding the helper to controllers, load only the library:</p>
-<pre><code>gem "browserx", require: "browser/browser"</code></pre>
+<pre><code class="language-ruby"><span class="n">gem</span> <span class="s2">"browserx"</span><span class="p">,</span> <span class="ss">require: </span><span class="s2">"browser/browser"</span></code></pre>
       </div>
     </section>
 
@@ -239,13 +239,13 @@ Browser.accept_language_size_limit = 4096</code></pre>
       <h2 id="middleware-title">Middleware</h2>
       <div class="prose">
         <p><code>Browser::Middleware</code> redirects user agents from a Rack stack:</p>
-<pre><code>use Browser::Middleware do
-  redirect_to "/upgrade" if browser.ie?
-end</code></pre>
+<pre><code class="language-ruby"><span class="n">use</span> <span class="no">Browser</span><span class="o">::</span><span class="no">Middleware</span> <span class="k">do</span>
+  <span class="n">redirect_to</span> <span class="s2">"/upgrade"</span> <span class="k">if</span> <span class="n">browser</span><span class="p">.</span><span class="nf">ie?</span>
+<span class="k">end</span></code></pre>
         <p>In Rails, route helpers work from an initializer (<code>config/initializers/browser.rb</code>), and <code>request</code> gives the <code>Rack::Request</code>:</p>
-<pre><code>Rails.configuration.middleware.use Browser::Middleware do
-  redirect_to upgrade_path if browser.ie? &amp;&amp; request.env["PATH_INFO"] != "/exclude_me"
-end</code></pre>
+<pre><code class="language-ruby"><span class="no">Rails</span><span class="p">.</span><span class="nf">configuration</span><span class="p">.</span><span class="nf">middleware</span><span class="p">.</span><span class="nf">use</span> <span class="no">Browser</span><span class="o">::</span><span class="no">Middleware</span> <span class="k">do</span>
+  <span class="n">redirect_to</span> <span class="n">upgrade_path</span> <span class="k">if</span> <span class="n">browser</span><span class="p">.</span><span class="nf">ie?</span> <span class="o">&amp;&amp;</span> <span class="n">request</span><span class="p">.</span><span class="nf">env</span><span class="p">[</span><span class="s2">"PATH_INFO"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">"/exclude_me"</span>
+<span class="k">end</span></code></pre>
       </div>
     </section>
 
@@ -253,13 +253,13 @@ end</code></pre>
       <h2 id="accept-language-title">Accept-Language</h2>
       <div class="prose">
         <p><code>browser.accept_language</code> is an array of languages, sorted by quality from highest to lowest. A missing quality means 1.0; a quality of zero means the language is not accepted.</p>
-<pre><code>language = Browser.new(user_agent, accept_language: "en-us").accept_language.first
+<pre><code class="language-ruby"><span class="n">language</span> <span class="o">=</span> <span class="no">Browser</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">user_agent</span><span class="p">,</span> <span class="ss">accept_language: </span><span class="s2">"en-us"</span><span class="p">).</span><span class="nf">accept_language</span><span class="p">.</span><span class="nf">first</span>
 
-language.code    #=&gt; "en"
-language.region  #=&gt; "US"
-language.full    #=&gt; "en-US"
-language.quality #=&gt; 1.0
-language.name    #=&gt; "English/United States"</code></pre>
+<span class="n">language</span><span class="p">.</span><span class="nf">code</span>    <span class="c1">#=&gt; "en"</span>
+<span class="n">language</span><span class="p">.</span><span class="nf">region</span>  <span class="c1">#=&gt; "US"</span>
+<span class="n">language</span><span class="p">.</span><span class="nf">full</span>    <span class="c1">#=&gt; "en-US"</span>
+<span class="n">language</span><span class="p">.</span><span class="nf">quality</span> <span class="c1">#=&gt; 1.0</span>
+<span class="n">language</span><span class="p">.</span><span class="nf">name</span>    <span class="c1">#=&gt; "English/United States"</span></code></pre>
       </div>
     </section>
 
@@ -267,17 +267,17 @@ language.name    #=&gt; "English/United States"</code></pre>
       <h2 id="quirks-title">Internet Explorer and Safari</h2>
       <div class="prose">
         <p><strong>Internet Explorer.</strong> In compatibility view, IE8 and later run as an older version. <code>version</code> and <code>full_version</code> return the navigator’s version; <code>msie_version</code> and <code>msie_full_version</code> return the engine’s.</p>
-<pre><code>browser.version             #=&gt; 11
-browser.full_version        #=&gt; 11.0
-browser.msie_version        #=&gt; 7
-browser.msie_full_version   #=&gt; 7.0
-browser.compatibility_view? #=&gt; true</code></pre>
+<pre><code class="language-ruby"><span class="n">browser</span><span class="p">.</span><span class="nf">version</span>             <span class="c1">#=&gt; 11</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">full_version</span>        <span class="c1">#=&gt; 11.0</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">msie_version</span>        <span class="c1">#=&gt; 7</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">msie_full_version</span>   <span class="c1">#=&gt; 7.0</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">compatibility_view?</span> <span class="c1">#=&gt; true</span></code></pre>
         <p><strong>Safari.</strong> iOS webviews and web apps are not Safari. Combine platform and WebKit detection instead:</p>
-<pre><code>browser = Browser.new("Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405")
+<pre><code class="language-ruby"><span class="n">browser</span> <span class="o">=</span> <span class="no">Browser</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s2">"Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405"</span><span class="p">)</span>
 
-browser.safari?        #=&gt; false
-browser.webkit?        #=&gt; true
-browser.platform.ios?  #=&gt; true</code></pre>
+<span class="n">browser</span><span class="p">.</span><span class="nf">safari?</span>        <span class="c1">#=&gt; false</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">webkit?</span>        <span class="c1">#=&gt; true</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">ios?</span>  <span class="c1">#=&gt; true</span></code></pre>
       </div>
     </section>
   </main>
