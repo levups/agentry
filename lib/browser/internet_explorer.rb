@@ -24,9 +24,10 @@ module Browser
     end
 
     def msie_full_version
-      (ua.match(%r{MSIE ([\d.]+)|Trident/.*?; rv:([\d.]+)}) &&
-        (Regexp.last_match(1) || Regexp.last_match(2))) ||
-        "0.0"
+      case ua.match(%r{MSIE ([\d.]+)|Trident/.*?; rv:([\d.]+)})
+      in [msie, trident_rv] then msie || trident_rv
+      else "0.0"
+      end
     end
 
     def msie_version
@@ -48,7 +49,7 @@ module Browser
 
     # Return the trident version.
     private def trident_version
-      ua.match(%r{Trident/([0-9.]+)}) && Regexp.last_match(1)
+      ua[%r{Trident/([0-9.]+)}, 1]
     end
 
     private def msie?

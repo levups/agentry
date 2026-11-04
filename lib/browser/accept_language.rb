@@ -30,17 +30,11 @@ module Browser
     end
 
     def code
-      @code ||= begin
-        code = part[/\A([^-;]+)/, 1]
-        code&.downcase
-      end
+      @code ||= part[/\A([^-;]+)/, 1]&.downcase
     end
 
     def region
-      @region ||= begin
-        region = part[/\A(?:.*?)-([^;-]+)/, 1]
-        region&.upcase
-      end
+      @region ||= part[/\A(?:.*?)-([^;-]+)/, 1]&.upcase
     end
 
     def quality

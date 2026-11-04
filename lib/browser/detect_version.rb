@@ -4,7 +4,7 @@ module Browser
   module DetectVersion
     private def detect_version?(actual_version, expected_version)
       return true unless expected_version
-      return false if expected_version && !actual_version
+      return false unless actual_version
 
       expected_version = parse_version(expected_version)
       actual_version = parse_version(actual_version)
