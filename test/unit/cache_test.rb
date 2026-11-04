@@ -207,4 +207,19 @@ class CacheTest < Minitest::Test
       thread.value.each { |actual| assert_equal expected, actual }
     end
   end
+
+  test "skips a browser only when its match? could not be true" do
+    corpus = File.foreach(Browser.root.join("corpus/user_agents.txt"),
+      chomp: true)
+    user_agents = Browser.user_agents.values + corpus.to_a
+
+    Browser::REQUIRED_PATTERN_BY_MATCHER.each do |matcher_class, pattern|
+      user_agents.each do |user_agent|
+        next if user_agent.bytesize >= Browser.user_agent_size_limit
+        next unless matcher_class.new(user_agent).match?
+
+        assert_match pattern, user_agent, matcher_class.name
+      end
+    end
+  end
 end
