@@ -47,3 +47,13 @@ over 2,000 distinct user agents and 20 repeated ones, median of 7. Run upstream 
   flag the system tests of apps using BrowserX: keep the categories apart.
 - `lib/browser/testing.rb` reads `test/ua*.yml` at runtime: those fixtures ship in the gem, keep them in
   `s.files`.
+
+## Changelog and releases
+
+- Every user-visible change adds its line under `## [Unreleased]` in `CHANGELOG.md`, in the same PR. A release
+  opens with a one-sentence lede, then **Breaking**, **New**, **Faster** (measured, with and without YJIT) and
+  **Fixed**, only those with entries. No version heading, date or link by hand: `bin/release` writes them.
+- `bin/release patch|minor|major` cuts a release from a green, up-to-date `main` (README, Releasing), and
+  `.github/workflows/release.yml` publishes it. Both are the same in every next-gen-gems gem: change them in all
+  four at once.
+- RubyGems trusts the Release workflow (trusted publishing): never `gem push` from a machine.
