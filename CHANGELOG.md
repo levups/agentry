@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-11-04
+
 First release as `browserx`, forked from browser 6.2.0 (`dd88933`). Same API: `gem "browserx"` replaces
 `gem "browser"` without touching a call site. Earlier versions are browser's: see its
 [changelog](https://github.com/fnando/browser/blob/main/CHANGELOG.md).
@@ -22,3 +24,6 @@ First release as `browserx`, forked from browser 6.2.0 (`dd88933`). Same API: `g
 **New**
 - A corpus of 20,328 user agents, with snapshot and diff scripts proving answers match upstream, and a
   request benchmark.
+
+[Unreleased]: https://github.com/next-gen-gems/browserx/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/next-gen-gems/browserx/releases/tag/v1.0.0
