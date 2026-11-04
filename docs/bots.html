@@ -60,19 +60,19 @@
       </table>
       <div class="prose">
         <p class="more"><code>browser.bot.why?</code> returns the matcher that fired. A matcher is any callable taking the lowercased user agent and a browser:</p>
-<pre><code>Browser::Bot.matchers &lt;&lt; -&gt;(ua, _browser) { ua.match?(/externalhit/i) }</code></pre>
+<pre><code class="language-ruby"><span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">matchers</span> <span class="o">&lt;&lt;</span> <span class="o">-&gt;</span><span class="p">(</span><span class="n">ua</span><span class="p">,</span> <span class="n">_browser</span><span class="p">)</span> <span class="p">{</span> <span class="n">ua</span><span class="p">.</span><span class="nf">match?</span><span class="p">(</span><span class="sr">/externalhit/i</span><span class="p">)</span> <span class="p">}</span></code></pre>
         <p>To start from nothing, <code>Browser::Bot.matchers.clear</code>; to get the built-in ones back, <code>Browser::Bot.matchers += Browser::Bot.default_matchers</code>. To restore browser 2’s detection, remove the keyword and empty user agent matchers:</p>
-<pre><code>Browser::Bot.matchers.delete(Browser::Bot::KeywordMatcher)
-Browser::Bot.matchers.delete(Browser::Bot::EmptyUserAgentMatcher)</code></pre>
+<pre><code class="language-ruby"><span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">matchers</span><span class="p">.</span><span class="nf">delete</span><span class="p">(</span><span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="o">::</span><span class="no">KeywordMatcher</span><span class="p">)</span>
+<span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">matchers</span><span class="p">.</span><span class="nf">delete</span><span class="p">(</span><span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="o">::</span><span class="no">EmptyUserAgentMatcher</span><span class="p">)</span></code></pre>
       </div>
     </section>
 
     <section id="extending" aria-labelledby="extending-title">
       <h2 id="extending-title">Extending the lists</h2>
       <div class="prose">
-<pre><code>Browser::Bot.bots.merge!(new_bots_hash)
-Browser::Bot.bot_exceptions += new_exceptions
-Browser::Bot.search_engines.merge!(new_search_engines_hash)</code></pre>
+<pre><code class="language-ruby"><span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">bots</span><span class="p">.</span><span class="nf">merge!</span><span class="p">(</span><span class="n">new_bots_hash</span><span class="p">)</span>
+<span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">bot_exceptions</span> <span class="o">+=</span> <span class="n">new_exceptions</span>
+<span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">search_engines</span><span class="p">.</span><span class="nf">merge!</span><span class="p">(</span><span class="n">new_search_engines_hash</span><span class="p">)</span></code></pre>
         <p>The prefix-trie regexp behind each list is rebuilt when the list grows or is replaced. To add a bot to BrowserX itself, add its user agent to <code>test/ua_bots.yml</code> and its name to <code>bots.yml</code>; a search engine also goes in <code>test/ua_search_engines.yml</code> and <code>search_engines.yml</code>.</p>
         <p><strong>A trap.</strong> Public crawler lists call “bot” anything that is not a human browser: crawlers, but also test drivers (Playwright, Puppeteer, Selenium), scripts and scanners. Adding them all to <code>bot?</code> would flag the system tests of the apps using it, so BrowserX keeps them out of it.</p>
       </div>
@@ -82,8 +82,8 @@ Browser::Bot.search_engines.merge!(new_search_engines_hash)</code></pre>
       <h2 id="corpus-title">The corpus</h2>
       <div class="prose">
         <p><code>corpus/user_agents.txt</code> holds 20,328 distinct user agents. A change that is not meant to change an answer proves it there: one script writes every answer of a gem as JSON lines, another diffs two snapshots.</p>
-<pre><code>ruby -I path/to/upstream/lib script/corpus_snapshot.rb &gt; /tmp/upstream.jsonl
-ruby -I lib script/corpus_snapshot.rb &gt; /tmp/browserx.jsonl
+<pre><code class="language-sh">ruby <span class="nt">-I</span> path/to/upstream/lib script/corpus_snapshot.rb <span class="o">&gt;</span> /tmp/upstream.jsonl
+ruby <span class="nt">-I</span> lib script/corpus_snapshot.rb <span class="o">&gt;</span> /tmp/browserx.jsonl
 ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/browserx.jsonl</code></pre>
         <p><code>path/to/upstream</code> is a plain clone of <a href="https://github.com/fnando/browser">fnando/browser</a> at <code>dd88933</code>. A change meant to change answers, like a fresher bot list, lists the differences it expects, and the diff must show exactly those.</p>
       </div>

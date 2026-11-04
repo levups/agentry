@@ -62,8 +62,8 @@
       <h2 id="reproduce-title">Reproduce</h2>
       <div class="prose">
         <p>Run it without JIT and with <code>--yjit</code>, for upstream and for BrowserX, one at a time on an otherwise idle machine. <code>path/to/upstream</code> is a plain clone of <a href="https://github.com/fnando/browser">fnando/browser</a> at <code>dd88933</code>.</p>
-<pre><code>ruby --yjit -I path/to/upstream/lib bench/request.rb
-ruby --yjit -I lib bench/request.rb</code></pre>
+<pre><code class="language-sh">ruby <span class="nt">--yjit</span> <span class="nt">-I</span> path/to/upstream/lib bench/request.rb
+ruby <span class="nt">--yjit</span> <span class="nt">-I</span> lib bench/request.rb</code></pre>
       </div>
     </section>
   </main>
