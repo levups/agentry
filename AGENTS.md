@@ -14,7 +14,7 @@ more signals (bot categories, verified crawler IPs, Cloudflare headers, Client H
 
 ## Corpus diff
 
-A change not meant to change an answer proves it on the 20,328 user agents of `corpus/`:
+A change not meant to change an answer proves it on the 20,328 user agents of `corpus/` (CI's Corpus diff job):
 
 ```bash
 ruby -I path/to/upstream/lib script/corpus_snapshot.rb > /tmp/upstream.jsonl # fnando/browser at dd88933

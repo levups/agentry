@@ -187,8 +187,9 @@ end
 ### Migrating from browser
 
 Replace `gem "browser"` with `gem "browserx"` in the Gemfile, nothing else: `require "browser"`, the `Browser`
-namespace and every predicate stay. To roll back, put `gem "browser"` back. BrowserX requires Ruby 3.3 or later
-and is tested on Rails 8.0 and 8.1.
+namespace and every predicate stay. Both gems define `Browser`, so BrowserX refuses to load next to `browser`,
+with an error saying so, rather than letting one silently override the other. To roll back, put `gem "browser"`
+back. BrowserX requires Ruby 3.3 or later and is tested on Rails 8.0 and 8.1.
 
 ### Rails integration
 
@@ -403,7 +404,7 @@ bundle exec rubocop
 ```
 
 A change that is not meant to change an answer proves it on the corpus of 20,000 user agents, against a plain
-clone of [fnando/browser](https://github.com/fnando/browser) at `dd88933`:
+clone of [fnando/browser](https://github.com/fnando/browser) at `dd88933`, as CI does on every pull request:
 
 ```bash
 ruby -I path/to/upstream/lib script/corpus_snapshot.rb > /tmp/upstream.jsonl
