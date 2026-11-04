@@ -22,7 +22,7 @@ module Browser
     def accept_language
       @accept_language ||= begin
         validate_size(:accept_language, @accept_language_raw)
-        AcceptLanguage.parse(@accept_language_raw)
+        Cache.accept_language(@accept_language_raw)
       end
     end
 
@@ -39,12 +39,12 @@ module Browser
 
     # Return the platform.
     def platform
-      @platform ||= Platform.new(ua)
+      @platform ||= detection.platform
     end
 
     # Return the bot info.
     def bot
-      @bot ||= Bot.new(ua)
+      @bot ||= detection.bot
     end
 
     # Detect if current user agent is from a bot.
@@ -54,7 +54,7 @@ module Browser
 
     # Return the device info.
     def device
-      @device ||= Device.new(ua, platform:)
+      @device ||= detection.device
     end
 
     # Detect if browser is Microsoft Internet Explorer.
@@ -271,6 +271,10 @@ module Browser
     # Detect if the browser is Epiphany.
     def epiphany?(expected_version = nil)
       instance_of?(Epiphany) && detect_version?(full_version, expected_version)
+    end
+
+    private def detection
+      @detection ||= Cache.detection(ua)
     end
 
     private def validate_size(subject, input)
