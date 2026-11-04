@@ -12,7 +12,7 @@ module Browser
       end
 
       def match?
-        ua.match?("Playstation Vita")
+        ua.include?("Playstation Vita")
       end
     end
   end

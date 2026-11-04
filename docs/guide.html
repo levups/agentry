@@ -218,6 +218,7 @@
           <tr><td><code>accept_language:</code></td><td><code>nil</code></td><td>The Accept-Language header, passed to <code>Browser.new</code>; parsed into <code>browser.accept_language</code>.</td></tr>
           <tr><td><code>Browser.user_agent_size_limit</code></td><td>2048</td><td>Largest user agent accepted, in bytes. A larger one raises <code>Browser::Error</code>.</td></tr>
           <tr><td><code>Browser.accept_language_size_limit</code></td><td>2048</td><td>Largest Accept-Language header accepted, in bytes. A larger one raises <code>Browser::Error</code>.</td></tr>
+          <tr><td><code>Browser.cache_size</code></td><td>1000</td><td>Distinct user agents (and Accept-Language headers) whose detection each process keeps, about 1 KB each; emptied when full or when a matcher list or the bot list changes. <code>0</code> turns it off.</td></tr>
           <tr><td><code>Browser::Bot.matchers</code></td><td>three built-in matchers</td><td>Callables deciding whether a user agent is a bot. See <a href="bots.html#matchers">Bots</a>.</td></tr>
           <tr><td><code>Browser::Bot.bots</code></td><td><code>bots.yml</code></td><td>Known bots, keyed by a lowercase substring of their user agent.</td></tr>
           <tr><td><code>Browser::Bot.search_engines</code></td><td><code>search_engines.yml</code></td><td>Bots answering <code>bot.search_engine?</code>.</td></tr>

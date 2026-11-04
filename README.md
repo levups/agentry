@@ -407,6 +407,18 @@ Browser.user_agent_size_limit = 4096
 Browser.accept_language_size_limit = 4096
 ```
 
+### Cache
+
+Each process keeps what it detected for the last 1,000 distinct user agents (browser, platform, device, bot
+answers) and the last 1,000 Accept-Language headers it parsed, about 1 KB per user agent: a repeated user agent
+costs about 2 µs. The cache empties itself when full, and when `Browser.matchers`, `Browser::Bot.matchers`,
+`Browser::Platform.matchers`, `Browser::Device.matchers`, the bot list or its exceptions change. Setting
+`Browser.cache_size` empties it too, for example after renaming an entry of `Browser::Bot.bots` in place.
+
+```ruby
+Browser.cache_size = 5_000 # 0 turns it off
+```
+
 ## Performance
 
 `bench/request.rb` replays what a web request asks (name, version, `bot?`, platform, device, accept-language) over

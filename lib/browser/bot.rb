@@ -122,8 +122,14 @@ module Browser
       @ua = ua.downcase.strip
     end
 
+    # A bot is shared by the browsers of its user agent: each answer holds
+    # until a matcher list or the bot list changes.
     def bot?
-      !bot_exception? && detect_bot?
+      generation = Cache.generation
+      unless @bot&.first == generation
+        @bot = [generation, !bot_exception? && detect_bot?]
+      end
+      @bot.last
     end
 
     def why?
@@ -137,7 +143,11 @@ module Browser
     def name
       return unless bot?
 
-      self.class.bots[known_bot_keyword] || GENERIC_NAME
+      generation = Cache.generation
+      unless @name&.first == generation
+        @name = [generation, self.class.bots[known_bot_keyword] || GENERIC_NAME]
+      end
+      @name.last
     end
 
     # Test drivers have a category, but no bot? (bot_categories.yml).
