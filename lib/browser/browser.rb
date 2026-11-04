@@ -47,6 +47,8 @@ require_relative "middleware"
 require_relative "platform"
 require_relative "device"
 require_relative "meta"
+require_relative "detection"
+require_relative "cache"
 
 module Browser
   EMPTY_STRING = ""
@@ -63,10 +65,22 @@ module Browser
 
   class << self
     attr_accessor :user_agent_size_limit, :accept_language_size_limit
+    attr_reader :cache_size
   end
 
   self.user_agent_size_limit = 2048
   self.accept_language_size_limit = 2048
+
+  def self.cache_size=(size)
+    unless size.is_a?(Integer) && size >= 0
+      raise ArgumentError, "cache_size must be an Integer >= 0, got #{size.inspect}"
+    end
+
+    @cache_size = size
+    Cache.clear
+  end
+
+  self.cache_size = 1000
 
   # Hold the list of browser matchers.
   # Order is important.
@@ -108,9 +122,20 @@ module Browser
   end
 
   def self.new(user_agent, **)
+    user_agent ||= EMPTY_STRING
+    browser_class = Cache.cached_detection(user_agent)&.browser_class
+    return browser_class.new(user_agent, **) if browser_class
+
+    browser = detect(user_agent, **)
+    Cache.detection(user_agent).browser_class = browser.class
+    browser
+  end
+
+  def self.detect(user_agent, **)
     matchers.each do |matcher_class|
-      matcher = matcher_class.new(user_agent || EMPTY_STRING, **)
+      matcher = matcher_class.new(user_agent, **)
       return matcher if matcher.match?
     end
   end
+  private_class_method :detect
 end
