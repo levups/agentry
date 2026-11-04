@@ -90,6 +90,9 @@ jobs:
           bundler-cache: true
       - name: Check the highlighted docs
         run: bundle exec rake docs:highlight:check
+      # This gem's own: the site's numbers come from docs/benchmarks.json and docs/bot_coverage.json.
+      - name: Check the rendered docs
+        run: bundle exec rake docs:render:check
 
   # This gem's own: a change not meant to change an answer gives the same ones as fnando/browser at dd88933.
   corpus:

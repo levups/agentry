@@ -36,6 +36,7 @@
       <p class="lede">Bot detection is deliberately aggressive: a user agent is a bot as soon as one matcher says so, unless it is a known exception.</p>
       <ul class="toc">
         <li><a href="#lists">The lists</a></li>
+        <li><a href="#coverage">Coverage</a></li>
         <li><a href="#categories">Categories</a></li>
         <li><a href="#matchers">Matchers</a></li>
         <li><a href="#extending">Extending the lists</a></li>
@@ -46,15 +47,51 @@
 
     <section id="lists" aria-labelledby="lists-title">
       <h2 id="lists-title">The lists</h2>
+      <!-- render:bot-lists -->
       <div class="tiles">
-        <div class="tile"><span class="tile-value">1,566</span><span class="tile-label">named bots</span><span class="tile-detail"><code>bots.yml</code>, keyed by a lowercase substring of the user agent</span></div>
-        <div class="tile"><span class="tile-value">16</span><span class="tile-label">categories</span><span class="tile-detail"><code>bot_categories.yml</code>: <code>ai_crawler</code>, <code>search_engine_crawler</code>, <code>scanner</code>…</span></div>
-        <div class="tile"><span class="tile-value">6</span><span class="tile-label">search engines</span><span class="tile-detail"><code>search_engines.yml</code>: Googlebot, Bingbot, Baidu, DuckDuckBot, Slurp, Ask Jeeves</span></div>
-        <div class="tile"><span class="tile-value">4</span><span class="tile-label">exceptions</span><span class="tile-detail"><code>bot_exceptions.yml</code>: never a bot, whatever a matcher says</span></div>
+      <div class="tile"><span class="tile-value">1,566</span><span class="tile-label">named bots</span><span class="tile-detail"><code>bots.yml</code>, keyed by a lowercase substring of the user agent</span></div>
+      <div class="tile"><span class="tile-value">16</span><span class="tile-label">categories</span><span class="tile-detail"><code>bot_categories.yml</code>: <code>ai_crawler</code>, <code>search_engine_crawler</code>, <code>scanner</code>…</span></div>
+      <div class="tile"><span class="tile-value">6</span><span class="tile-label">search engines</span><span class="tile-detail"><code>search_engines.yml</code>: answer <code>bot.search_engine?</code></span></div>
+      <div class="tile"><span class="tile-value">4</span><span class="tile-label">exceptions</span><span class="tile-detail"><code>bot_exceptions.yml</code>: never a bot, whatever a matcher says</span></div>
       </div>
+      <!-- /render:bot-lists -->
       <div class="prose">
         <p class="more"><code>browser.bot.name</code> is the name from <code>bots.yml</code>, or <code>Generic Bot</code> when another matcher caught it. The lists are in the <a href="https://github.com/next-gen-gems/browserx/blob/main/bots.yml">repository</a>.</p>
         <p>Every week, <code>script/sync_bots.rb</code> rewrites the part of <code>bots.yml</code> below its marker line, and <code>bot_categories.yml</code>, from crawler-user-agents and ai.robots.txt, and a pull request shows the answers that change. Above the marker, the list inherited from browser stays as it was.</p>
+      </div>
+    </section>
+
+    <section id="coverage" aria-labelledby="coverage-title">
+      <h2 id="coverage-title">Coverage</h2>
+      <div class="prose">
+        <p>How many of the bots of crawler-user-agents and ai.robots.txt each gem calls a bot, per category: every user agent crawler-user-agents gives as an instance, and, for each name of ai.robots.txt, which gives none, the user agent an AI agent of 2026 sends. <code>script/bot_coverage.rb</code> counts them into <code>docs/bot_coverage.json</code> and the weekly sync regenerates it, with this table.</p>
+      </div>
+      <!-- render:coverage -->
+      <p class="note">Of the 882 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out), browser misses 353 and BrowserX 11. Against fnando/browser dd88933.</p>
+      <div class="table-scroll"><table class="options">
+      <thead><tr><th scope="col">Category</th><th scope="col" class="number">User agents</th><th scope="col" class="number">browser: <code>bot?</code></th><th scope="col" class="number">BrowserX: <code>bot?</code></th><th scope="col" class="number">BrowserX: a category</th></tr></thead>
+      <tbody>
+      <tr><td><code>academic_research</code></td><td class="number">35</td><td class="number">24</td><td class="number">35</td><td class="number">34</td></tr>
+      <tr><td><code>advertising_and_marketing</code></td><td class="number">97</td><td class="number">78</td><td class="number">94</td><td class="number">94</td></tr>
+      <tr><td><code>ai_agent</code></td><td class="number">35</td><td class="number">12</td><td class="number">21</td><td class="number">28</td></tr>
+      <tr><td><code>ai_assistant</code></td><td class="number">35</td><td class="number">19</td><td class="number">34</td><td class="number">34</td></tr>
+      <tr><td><code>ai_crawler</code></td><td class="number">186</td><td class="number">150</td><td class="number">183</td><td class="number">183</td></tr>
+      <tr><td><code>ai_search</code></td><td class="number">45</td><td class="number">36</td><td class="number">44</td><td class="number">43</td></tr>
+      <tr><td><code>archiver</code></td><td class="number">68</td><td class="number">50</td><td class="number">68</td><td class="number">68</td></tr>
+      <tr><td><code>browser_automation</code></td><td class="number">23</td><td class="number">2</td><td class="number">2</td><td class="number">21</td></tr>
+      <tr><td><code>feed_fetcher</code></td><td class="number">92</td><td class="number">40</td><td class="number">91</td><td class="number">91</td></tr>
+      <tr><td><code>http_library</code></td><td class="number">103</td><td class="number">68</td><td class="number">102</td><td class="number">102</td></tr>
+      <tr><td><code>monitoring_and_analytics</code></td><td class="number">260</td><td class="number">141</td><td class="number">258</td><td class="number">256</td></tr>
+      <tr><td><code>page_preview</code></td><td class="number">136</td><td class="number">110</td><td class="number">135</td><td class="number">133</td></tr>
+      <tr><td><code>scanner</code></td><td class="number">108</td><td class="number">46</td><td class="number">106</td><td class="number">106</td></tr>
+      <tr><td><code>search_engine_crawler</code></td><td class="number">418</td><td class="number">384</td><td class="number">417</td><td class="number">406</td></tr>
+      <tr><td><code>search_engine_optimization</code></td><td class="number">685</td><td class="number">481</td><td class="number">674</td><td class="number">671</td></tr>
+      </tbody>
+      <tfoot><tr><th scope="row">Total</th><td class="number">2,326</td><td class="number">1,641</td><td class="number">2,264</td><td class="number">2,270</td></tr></tfoot>
+      </table></div>
+      <!-- /render:coverage -->
+      <div class="prose">
+        <p class="more"><code>browser_automation</code> is never <code>bot?</code> on purpose (<a href="#categories">below</a>). <code>ai_agent</code> misses its plain-word names (<code>Operator</code>, <code>Cursor</code>, <code>Devin</code>, <code>Codex</code>): as substrings they would match human user agents.</p>
       </div>
     </section>
 

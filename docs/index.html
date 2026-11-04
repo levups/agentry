@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BrowserX — the browser gem's API, faster</title>
-<meta name="description" content="Browser detection for Ruby: the browser gem's API, nearly twice as fast. Swap one line of the Gemfile, keep every call site.">
+<meta name="description" content="Browser detection for Ruby: the browser gem's API, faster, with a bot list synced every week. Swap one line of the Gemfile, keep every call site.">
 <meta property="og:title" content="BrowserX — the browser gem's API, faster">
-<meta property="og:description" content="A drop-in replacement for fnando/browser: same Browser namespace, same predicates, 61 µs per request instead of 110 µs.">
+<meta property="og:description" content="A drop-in replacement for fnando/browser: same Browser namespace, same predicates, faster, and a bot list that stays fresh.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://next-gen-gems.github.io/browserx/">
 <meta property="og:url" content="https://next-gen-gems.github.io/browserx/">
@@ -35,22 +35,26 @@
     <header class="hero">
       <h1 class="wordmark">BrowserX</h1>
       <div>
-        <p class="byline"><span>Browser detection, nearly twice as fast.</span><span class="byline-sub">Same API as browser.</span></p>
-        <p class="summary">A drop-in replacement for the browser gem: same <code>Browser</code> namespace, same <code>require "browser"</code>, same predicates. Change one line of the Gemfile, keep every call site.</p>
+        <p class="byline"><span>Same API as browser, faster,</span><span class="byline-sub">and a bot list that stays fresh.</span></p>
+        <!-- render:lede -->
+        <p class="summary">25 µs per request instead of 126 µs with browser, 2.0 µs once a user agent was seen (YJIT). Of the 882 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out), browser misses 353 and BrowserX 11.</p>
+        <!-- /render:lede -->
         <code class="install">gem "browserx"</code>
-        <p class="links"><a href="guide.html">Get started</a><a href="guide.html#migrating">Migrating from browser</a><a href="benchmarks.html">Benchmarks</a></p>
+        <p class="links"><a href="guide.html#migrating">Migrating from browser</a><a href="guide.html">Guide</a><a href="bots.html#coverage">Bot coverage</a></p>
       </div>
     </header>
 
     <section aria-labelledby="numbers-title">
       <h2 id="numbers-title">In numbers</h2>
+      <!-- render:numbers -->
       <div class="tiles">
-        <div class="tile"><span class="tile-value">61 µs</span><span class="tile-label">per request</span><span class="tile-detail">instead of 110 µs with browser 6.2.0</span></div>
-        <div class="tile"><span class="tile-value">129</span><span class="tile-label">objects per request</span><span class="tile-detail">instead of 245 with browser 6.2.0</span></div>
-        <div class="tile"><span class="tile-value">20,328</span><span class="tile-label">user agents in the corpus</span><span class="tile-detail">on which BrowserX’s answers are diffed against browser’s</span></div>
+      <div class="tile"><span class="tile-value">25 µs</span><span class="tile-label">per request</span><span class="tile-detail">instead of 126 µs with browser 6.2.0, on 2,000 distinct user agents</span></div>
+      <div class="tile"><span class="tile-value">2.0 µs</span><span class="tile-label">for a repeated user agent</span><span class="tile-detail">instead of 114 µs: detection is cached per user agent</span></div>
+      <div class="tile"><span class="tile-value">353</span><span class="tile-label">recent crawlers browser misses</span><span class="tile-detail">of the 882 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out); BrowserX misses 11</span></div>
       </div>
-      <p class="note more">Measured by <code>bench/request.rb</code> on Ruby 4.0.9 with YJIT: what a web request asks (name, version, <code>bot?</code>, platform, device, accept-language), median of 7.</p>
-      <p class="more"><a href="benchmarks.html">The benchmark, and how to reproduce it</a></p>
+      <p class="note more">Ruby 4.0.9, Apple M4 Max, measured on 2026-11-04: browser 6.2.0 at <code>dd88933</code>, BrowserX 1.0.0 at <code>e8bdc86</code>. Each figure is the median of 7 runs. YJIT on.</p>
+      <!-- /render:numbers -->
+      <p class="more"><a href="benchmarks.html">The benchmark, and how to reproduce it</a> · <a href="bots.html#coverage">Coverage per category</a></p>
     </section>
 
     <section aria-labelledby="changes-title">
@@ -59,27 +63,27 @@
         <div class="card">
           <h3>Nothing in your code</h3>
           <p>Every predicate, every <code>require</code> path and the <code>Browser</code> namespace of browser keep working unchanged. The upstream test suite runs unmodified.</p>
-          <p><a href="guide.html#usage">Usage</a></p>
+          <p><a href="guide.html#migrating">Migrating</a></p>
         </div>
         <div class="card">
-          <h3>Bot detection in one pass</h3>
-          <p>The bot list is matched by one prefix-trie regexp instead of one match per entry, and the browser is no longer detected twice to answer <code>bot?</code>.</p>
+          <h3>Detected once per user agent</h3>
+          <p>Each process caches what it detected for the last 1,000 user agents, so a returning visitor costs a hash lookup. <code>Browser.cache_size</code> sizes it.</p>
           <p><a href="benchmarks.html#why">Why it is faster</a></p>
         </div>
         <div class="card">
+          <h3>A bot list that stays fresh</h3>
+          <p>Synced every week from crawler-user-agents and ai.robots.txt, both MIT, through a pull request that lists every answer it changes.</p>
+          <p><a href="bots.html#coverage">Coverage</a></p>
+        </div>
+        <div class="card">
+          <h3>Bots by category</h3>
+          <p><code>bot.category</code> tells an AI crawler from a search engine or a scanner, <code>bot.ai?</code> and <code>bot.user_triggered?</code> an agent acting for a person. Test drivers never become bots.</p>
+          <p><a href="bots.html#categories">Categories</a></p>
+        </div>
+        <div class="card">
           <h3>The same answers, proven</h3>
-          <p>A snapshot script runs both gems over 20,328 user agents and a diff script compares them, so a speed-up cannot change a single answer unnoticed.</p>
+          <p>Both gems run over 20,328 user agents on every pull request: an answer that differs from browser’s is either listed as intended or fails the CI.</p>
           <p><a href="bots.html#corpus">The corpus</a></p>
-        </div>
-        <div class="card">
-          <h3>Half the allocations</h3>
-          <p>Platform and device matchers are built lazily, only when a request asks for them.</p>
-          <p><a href="benchmarks.html">Benchmarks</a></p>
-        </div>
-        <div class="card">
-          <h3>A bot list meant to stay fresh</h3>
-          <p>From permissively licensed sources: crawler-user-agents and ai.robots.txt, both MIT.</p>
-          <p><a href="bots.html">Bots</a></p>
         </div>
         <div class="card">
           <h3>Current Ruby and Rails</h3>

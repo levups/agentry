@@ -60,9 +60,27 @@
         <p>Change one line of the Gemfile, nothing else:</p>
 <pre><code class="language-diff"><span class="gd">- gem "browser"
 </span><span class="gi">+ gem "browserx"</span></code></pre>
-        <p>The gem still loads with <code>require "browser"</code>, still defines <code>Browser</code>, and <code>require "browser/aliases"</code> or <code>require: "browser/browser"</code> keep the meaning they had. BrowserX 1.0.0 is forked from browser 6.2.0 (<code>dd88933</code>), and a change that is not meant to change an answer is diffed against that version on the 20,328 user agents of <a href="bots.html#corpus">the corpus</a>.</p>
-        <p>To roll back, put <code>gem "browser"</code> back: 1.0.0 adds no option of its own, so no call site depends on BrowserX.</p>
-        <p>What comes next — a per-user-agent cache, bot categories, verified crawler IPs, Cloudflare headers and Client Hints — is tracked in the <a href="https://github.com/next-gen-gems/browserx/issues">GitHub issues</a>. Each will be an addition; no existing predicate changes meaning.</p>
+        <p>The gem still loads with <code>require "browser"</code>, still defines <code>Browser</code>, and <code>require "browser/aliases"</code> or <code>require: "browser/browser"</code> keep the meaning they had. Both gems define <code>Browser</code>, so BrowserX refuses to load next to browser, with an error saying so: remove the old line, don’t add a second one. BrowserX is forked from browser 6.2.0 (<code>dd88933</code>), and every pull request diffs its answers against that version on the 20,328 user agents of <a href="bots.html#corpus">the corpus</a>.</p>
+
+        <h3>What changes on its own</h3>
+        <ul>
+          <!-- render:switch-day -->
+          <li><strong>More bots, from the day you switch.</strong> 600 user agents of the corpus that browser took for humans are bots for BrowserX: AI crawlers and assistants (<code>meta-externalagent</code>, <code>Perplexity-User</code>, <code>Claude-User</code>), ad and SEO crawlers, monitors, feed readers, scanners. Analytics that leave bots out count fewer visitors from that day, and anything gated by <code>bot?</code> (a session, a captcha, a cache) treats them as bots. Note the date of the switch next to your traffic charts. <a href="bots.html#coverage">Coverage per category</a>.</li>
+          <li><strong>Names for bots.</strong> 792 user agents that browser named <code>Generic Bot</code> get the name of their bot. No name browser gave changes.</li>
+          <!-- /render:switch-day -->
+          <li><strong>Nothing else.</strong> No bot stops being one, and no browser, platform or device answer moves. Test drivers (HeadlessChrome, Playwright, Puppeteer, Selenium) stay out of <code>bot?</code>, so the system tests of an app see what they saw.</li>
+          <li><strong>A cache, on by default.</strong> Each process keeps the detection of its last 1,000 distinct user agents, about 1 MB. It empties itself when a matcher list or the bot list changes, so code that edits them keeps working.</li>
+        </ul>
+
+        <h3>What you can add</h3>
+        <ul>
+          <li><code>Browser.cache_size = 5_000</code> to keep more user agents, <code>0</code> to turn the cache off. See <a href="#options">Options</a>.</li>
+          <li><code>browser.bot.category</code>, <code>bot.ai?</code> and <code>bot.user_triggered?</code>, to tell an AI crawler from a search engine, a scanner or an assistant fetching a page for a person. See <a href="bots.html#categories">Categories</a>.</li>
+          <!-- #4: one line each for verified crawler IPs, Cloudflare headers and Client Hints, linking to their sections. -->
+        </ul>
+
+        <h3>Rolling back</h3>
+        <p>Put <code>gem "browser"</code> back in place of <code>gem "browserx"</code>. The bots of the weekly sync go back to being humans, so the analytics shift reverses on that day. browser has none of the additions above: remove the calls to them first, or they raise <code>NoMethodError</code>.</p>
       </div>
     </section>
 
