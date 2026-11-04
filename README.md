@@ -11,6 +11,9 @@ your Gemfile instead of `gem "browser"`, and every call site keeps working — s
   and [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt), with categories (`bot.category`, `bot.ai?`).
   Of the 882 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out),
   browser misses 353, BrowserX 11.
+- **Verified signals**: `bot.verified?(ip)` checks a crawler against the IP ranges Google, Bing, OpenAI, Apple,
+  Perplexity and DuckDuckGo publish, `browser.cloudflare` reads the headers of a Cloudflare Transform Rule, and
+  Chromium's Client Hints tell Windows 11 from Windows 10.
 
 Site: https://next-gen-gems.github.io/browserx/
 
@@ -378,6 +381,31 @@ Browser::Bot.search_engines.merge!(new_search_engines_hash)
 Browser::Bot.category_by_keyword["faraday"] = :http_library
 ```
 
+### Verified crawlers
+
+Google, Bing, OpenAI, Apple, Perplexity and DuckDuckGo publish their crawlers' IP ranges. They ship in
+`bot_ip_ranges.yml`, rewritten by the weekly sync (`script/sync_ip_ranges.rb`). The lookup is a binary search, no
+network call; an IP that does not parse answers `false`.
+
+```ruby
+browser.bot.owner                                            # => :google for a user agent claiming Googlebot
+browser.bot.verified?(request.remote_ip)                     # => whether the IP is in Google's ranges
+browser.bot.verified?(request.remote_ip, reverse_dns: true)  # also Google's DNS check: two DNS queries
+Browser::Bot::IPRanges.refresh                               # fetches the ranges again, in a long-lived process
+```
+
+### Cloudflare and Client Hints
+
+`Browser.new(user_agent, accept_language:, headers: rack_env)` also reads the request's headers; the Rails helper
+and the middleware pass them. `browser.cloudflare` reads the headers a Cloudflare Transform Rule sets
+(`verified_bot?`, `bot_category`, `bot_score`) and `CF-IPCountry` (`country`); their names are configurable with
+`Browser::Cloudflare.header_names = {bot_score: "X-My-Score"}`. Chromium's Client Hints (`Sec-CH-UA`,
+`Sec-CH-UA-Mobile`, `Sec-CH-UA-Platform`, `Sec-CH-UA-Platform-Version`) refine the platform and the device, and
+`browser.platform.windows11?` needs them. Without `headers:`, every answer is the user agent's, as before. The
+rule to create and the details are in the [guide](https://next-gen-gems.github.io/browserx/guide.html#cloudflare).
+
+`bench/signals.rb` measures what they cost.
+
 ### Middleware
 
 You can use the `Browser::Middleware` to redirect user agents.
@@ -507,5 +535,5 @@ MIT, by Level UP Solutions, see [LICENSE.md](LICENSE.md). Originally written by 
 [ua-parser/uap-core](https://github.com/ua-parser/uap-core) (Apache 2.0),
 [crawler-user-agents](https://github.com/monperrus/crawler-user-agents) (MIT) and browser's test fixtures; the bot
 list and its categories come from [crawler-user-agents](https://github.com/monperrus/crawler-user-agents) (MIT)
-and [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) (MIT): see
-[corpus/SOURCES.md](corpus/SOURCES.md).
+and [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) (MIT); the crawler IP ranges are those their
+owners publish for that purpose: see [corpus/SOURCES.md](corpus/SOURCES.md).

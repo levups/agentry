@@ -24,6 +24,7 @@ ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/browserx.jsonl
 
 A change meant to change answers (a fresher bot list) lists the differences it expects in
 `corpus/expected_differences.jsonl` (`corpus_diff.rb --write`); the diff passes when it shows exactly those.
+A method upstream lacks (`bot.owner`, `platform.windows11?`) is an addition: the diff only compares upstream's.
 
 ## Benchmark
 
