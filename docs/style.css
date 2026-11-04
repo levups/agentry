@@ -95,7 +95,10 @@ td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
 
 .left-out { max-width: var(--measure); padding-left: 1.25rem; }
 
-footer { margin-top: 5rem; padding-top: 1.5rem; border-top: 1px solid var(--rail); color: var(--muted); font-size: 0.9375rem; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+footer { margin-top: 5rem; padding-top: 1.5rem; border-top: 1px solid var(--rail); color: var(--muted); font-size: 0.9375rem; display: flex; gap: 0.5rem 1.5rem; flex-wrap: wrap; align-items: baseline; }
+footer p { margin: 0; }
+footer ul { display: flex; gap: 0.25rem 1rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
+footer a[aria-current="page"] { font-weight: 600; }
 
 @media (prefers-reduced-motion: no-preference) {
   .column-bar { transition: height 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
@@ -151,5 +154,3 @@ p code, li code, .rule-message code { overflow-wrap: anywhere; }
 
 .skip-link { position: absolute; left: 1rem; top: -3rem; padding: 0.5rem 0.9rem; background: var(--surface); color: var(--accent); border: 1.5px solid var(--accent); border-radius: 3px; z-index: 1; }
 .skip-link:focus { top: 1rem; }
-footer nav { display: flex; gap: 0.25rem 1rem; flex-wrap: wrap; }
-footer a[aria-current="page"] { font-weight: 600; }

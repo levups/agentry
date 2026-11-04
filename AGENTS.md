@@ -9,8 +9,8 @@ more signals (bot categories, verified crawler IPs, Cloudflare headers, Client H
 - `Browser.new(ua, accept_language:)`, every predicate and every `require` path of `browser` keep working
   unchanged. New features are additions (`bot.category`), never changed meanings.
 - The upstream suite (`bundle exec rake test`) stays green, unmodified. New behaviour gets new tests.
-- Supported: every maintained Ruby and Rails (endoflife.date), today Ruby 3.3+ and Rails 8.0, 8.1. CI runs the
-  organization's shared workflow (`next-gen-gems/.github`), RuboCop included: `bundle exec rubocop` stays clean.
+- Supported: every maintained Ruby and Rails (endoflife.date), today Ruby 3.3+ and Rails 8.0, 8.1. CI
+  (`.github/workflows/ci.yml`) runs RuboCop, then the tests on each of them: `bundle exec rubocop` stays clean.
 
 ## Corpus diff
 

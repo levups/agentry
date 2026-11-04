@@ -277,7 +277,7 @@ browser.compatibility_view?
 #=> true
 ```
 
-This behavior changed in `v1.0.0`; previously there wasn't a way of getting the
+This behavior changed in browser v1.0.0; previously there wasn't a way of getting the
 real browser version.
 
 ### Safari
