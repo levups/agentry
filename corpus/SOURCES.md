@@ -18,5 +18,12 @@
 - [ai-robots-txt/ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) `robots.json` (names and
   functions), MIT, Copyright (c) 2024 ai.robots.txt
 
+## Crawler IP ranges
+
+`script/sync_ip_ranges.rb` writes `bot_ip_ranges.yml` from the JSON files each owner publishes so that sites can
+verify its crawlers (the URLs are in `Browser::Bot::IPRanges::SOURCES`): Google (common crawlers, special crawlers,
+user-triggered fetchers and agents), Bing (bingbot), OpenAI (GPTBot, OAI-SearchBot, ChatGPT-User), Apple
+(Applebot), Perplexity (PerplexityBot, Perplexity-User) and DuckDuckGo (DuckDuckBot, DuckAssistBot).
+
 `expected_differences.jsonl` lists the answers on `user_agents.txt` where BrowserX differs from fnando/browser at
 `dd88933`, written by `script/corpus_diff.rb --write`.

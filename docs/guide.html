@@ -42,6 +42,9 @@
         <li><a href="#rails">Rails</a></li>
         <li><a href="#middleware">Middleware</a></li>
         <li><a href="#accept-language">Accept-Language</a></li>
+        <li><a href="#verified-crawlers">Verified crawlers</a></li>
+        <li><a href="#cloudflare">Cloudflare</a></li>
+        <li><a href="#client-hints">Client Hints</a></li>
         <li><a href="#quirks">Internet Explorer and Safari</a></li>
       </ul>
     </header>
@@ -68,7 +71,8 @@
           <li><strong>More bots, from the day you switch.</strong> 600 user agents of the corpus that browser took for humans are bots for BrowserX: AI crawlers and assistants (<code>meta-externalagent</code>, <code>Perplexity-User</code>, <code>Claude-User</code>), ad and SEO crawlers, monitors, feed readers, scanners. Analytics that leave bots out count fewer visitors from that day, and anything gated by <code>bot?</code> (a session, a captcha, a cache) treats them as bots. Note the date of the switch next to your traffic charts. <a href="bots.html#coverage">Coverage per category</a>.</li>
           <li><strong>Names for bots.</strong> 792 user agents that browser named <code>Generic Bot</code> get the name of their bot. No name browser gave changes.</li>
           <!-- /render:switch-day -->
-          <li><strong>Nothing else.</strong> No bot stops being one, and no browser, platform or device answer moves. Test drivers (HeadlessChrome, Playwright, Puppeteer, Selenium) stay out of <code>bot?</code>, so the system tests of an app see what they saw.</li>
+          <li><strong>Client Hints in Rails.</strong> The <code>browser</code> helper and the middleware also read the Client Hints Chromium sends with every request. They only move an answer when they contradict the user agent: Chrome for Android asking for the desktop site becomes an Android tablet instead of a Linux desktop. Without the hints (<code>Browser.new(user_agent, accept_language:)</code>, Safari, Firefox), nothing moves. See <a href="#client-hints">Client Hints</a>.</li>
+          <li><strong>Nothing else.</strong> No bot stops being one, and no browser, platform or device answer moves for a user agent alone. Test drivers (HeadlessChrome, Playwright, Puppeteer, Selenium) stay out of <code>bot?</code>, so the system tests of an app see what they saw.</li>
           <li><strong>A cache, on by default.</strong> Each process keeps the detection of its last 1,000 distinct user agents, about 1 MB. It empties itself when a matcher list or the bot list changes, so code that edits them keeps working.</li>
         </ul>
 
@@ -76,7 +80,9 @@
         <ul>
           <li><code>Browser.cache_size = 5_000</code> to keep more user agents, <code>0</code> to turn the cache off. See <a href="#options">Options</a>.</li>
           <li><code>browser.bot.category</code>, <code>bot.ai?</code> and <code>bot.user_triggered?</code>, to tell an AI crawler from a search engine, a scanner or an assistant fetching a page for a person. See <a href="bots.html#categories">Categories</a>.</li>
-          <!-- #4: one line each for verified crawler IPs, Cloudflare headers and Client Hints, linking to their sections. -->
+          <li><code>browser.bot.verified?(request.remote_ip)</code>, to tell a real Googlebot (or Bing, OpenAI, Apple, Perplexity, DuckDuckGo crawler) from one that only claims to be. See <a href="#verified-crawlers">Verified crawlers</a>.</li>
+          <li><code>browser.cloudflare</code>, to read the verified bot flag, category, bot score and country Cloudflare knows, through a Transform Rule. See <a href="#cloudflare">Cloudflare</a>.</li>
+          <li>An <code>Accept-CH: Sec-CH-UA-Platform-Version</code> response header, so that <code>browser.platform.windows11?</code> and the macOS and Android versions come from Chromium’s Client Hints. See <a href="#client-hints">Client Hints</a>.</li>
         </ul>
 
         <h3>Rolling back</h3>
@@ -210,6 +216,7 @@
 <span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows8?</span>
 <span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows8_1?</span>
 <span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows10?</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows11?</span>        <span class="c1"># from Client Hints only, see below</span>
 <span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows_rt?</span>
 <span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows_mobile?</span>
 <span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows_phone?</span>
@@ -234,6 +241,7 @@
         <thead><tr><th scope="col">Setting</th><th scope="col">Default</th><th scope="col">What it does</th></tr></thead>
         <tbody>
           <tr><td><code>accept_language:</code></td><td><code>nil</code></td><td>The Accept-Language header, passed to <code>Browser.new</code>; parsed into <code>browser.accept_language</code>.</td></tr>
+          <tr><td><code>headers:</code></td><td><code>nil</code></td><td>The Rack env of the request, passed to <code>Browser.new</code>; read for the <a href="#client-hints">Client Hints</a> and the <a href="#cloudflare">Cloudflare</a> headers. The Rails helper and the middleware pass it.</td></tr>
           <tr><td><code>Browser.user_agent_size_limit</code></td><td>2048</td><td>Largest user agent accepted, in bytes. A larger one raises <code>Browser::Error</code>.</td></tr>
           <tr><td><code>Browser.accept_language_size_limit</code></td><td>2048</td><td>Largest Accept-Language header accepted, in bytes. A larger one raises <code>Browser::Error</code>.</td></tr>
           <tr><td><code>Browser.cache_size</code></td><td>1000</td><td>Distinct user agents (and Accept-Language headers) whose detection each process keeps, about 1 KB each; emptied when full or when a matcher list or the bot list changes. <code>0</code> turns it off.</td></tr>
@@ -241,6 +249,8 @@
           <tr><td><code>Browser::Bot.bots</code></td><td><code>bots.yml</code></td><td>Known bots, keyed by a lowercase substring of their user agent.</td></tr>
           <tr><td><code>Browser::Bot.search_engines</code></td><td><code>search_engines.yml</code></td><td>Bots answering <code>bot.search_engine?</code>.</td></tr>
           <tr><td><code>Browser::Bot.bot_exceptions</code></td><td><code>bot_exceptions.yml</code></td><td>Substrings that are never a bot, even when a matcher says so.</td></tr>
+          <tr><td><code>Browser::Bot::IPRanges</code></td><td><code>bot_ip_ranges.yml</code></td><td>The IP ranges crawler owners publish; <code>.refresh</code> fetches them again. See <a href="#verified-crawlers">Verified crawlers</a>.</td></tr>
+          <tr><td><code>Browser::Cloudflare.header_names</code></td><td><code>X-Bot-Verified</code>, <code>X-Bot-Category</code>, <code>X-Bot-Score</code>, <code>CF-IPCountry</code></td><td>The headers <code>browser.cloudflare</code> reads; set a hash of the ones to change. See <a href="#cloudflare">Cloudflare</a>.</td></tr>
         </tbody>
       </table>
       <div class="prose">
@@ -252,7 +262,7 @@
     <section id="rails" aria-labelledby="rails-title">
       <h2 id="rails-title">Rails</h2>
       <div class="prose">
-        <p>The Gemfile line is enough: a railtie adds a <code>browser</code> helper to controllers and views, built from the request’s <code>User-Agent</code> and <code>Accept-Language</code> headers.</p>
+        <p>The Gemfile line is enough: a railtie adds a <code>browser</code> helper to controllers and views, built from the request’s <code>User-Agent</code> and <code>Accept-Language</code> headers, its <a href="#client-hints">Client Hints</a> and <a href="#cloudflare">Cloudflare</a> headers.</p>
 <pre><code class="language-erb"><span class="cp">&lt;%</span> <span class="k">if</span> <span class="n">browser</span><span class="p">.</span><span class="nf">ie?</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span> <span class="cp">%&gt;</span>
   <span class="nt">&lt;p</span> <span class="na">class=</span><span class="s">"disclaimer"</span><span class="nt">&gt;</span>You're running an older IE version. Please update it!<span class="nt">&lt;/p&gt;</span>
 <span class="cp">&lt;%</span> <span class="k">end</span> <span class="cp">%&gt;</span></code></pre>
@@ -286,6 +296,78 @@
 <span class="n">language</span><span class="p">.</span><span class="nf">full</span>    <span class="c1">#=&gt; "en-US"</span>
 <span class="n">language</span><span class="p">.</span><span class="nf">quality</span> <span class="c1">#=&gt; 1.0</span>
 <span class="n">language</span><span class="p">.</span><span class="nf">name</span>    <span class="c1">#=&gt; "English/United States"</span></code></pre>
+      </div>
+    </section>
+
+    <section id="verified-crawlers" aria-labelledby="verified-crawlers-title">
+      <h2 id="verified-crawlers-title">Verified crawlers</h2>
+      <div class="prose">
+        <p>A user agent is a claim: anyone can send <code>Googlebot</code>. Google, Bing, OpenAI, Apple, Perplexity and DuckDuckGo publish the IP ranges of their crawlers, and BrowserX ships them. <code>bot.owner</code> names the owner of the crawler a user agent claims to be, <code>bot.verified?(ip)</code> says whether the IP belongs to that owner’s ranges.</p>
+<pre><code class="language-ruby"><span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">owner</span>                         <span class="c1"># =&gt; :google, :bing, :openai, :apple, :perplexity, :duckduckgo or nil</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">verified?</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="nf">remote_ip</span><span class="p">)</span>  <span class="c1"># =&gt; true when a Googlebot comes from Google</span>
+
+<span class="k">if</span> <span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">owner</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">verified?</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="nf">remote_ip</span><span class="p">)</span>
+  <span class="n">head</span> <span class="ss">:forbidden</span> <span class="c1"># claims to be a known crawler, comes from elsewhere</span>
+<span class="k">end</span></code></pre>
+        <p>The lookup is a binary search over sorted integer ranges, IPv4 and IPv6, with no network call: <code>bench/signals.rb</code> measures it. An IP that does not parse (a forged <code>X-Forwarded-For</code>) answers <code>false</code>, never raises. Pass the client’s IP as your proxies resolve it (<code>request.remote_ip</code> in Rails, with <code>trusted_proxies</code> set).</p>
+        <p><strong>Reverse DNS.</strong> Google, Bing and Apple also document a DNS check: the IP’s reverse lookup must name one of their domains, and that name must resolve back to the IP. It costs two DNS queries, so it is off unless asked, and only tried for an IP outside the published ranges:</p>
+<pre><code class="language-ruby"><span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">verified?</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="nf">remote_ip</span><span class="p">,</span> <span class="ss">reverse_dns: </span><span class="kp">true</span><span class="p">)</span></code></pre>
+        <p><strong>Fresh ranges.</strong> The weekly bot sync rewrites <code>bot_ip_ranges.yml</code> from the owners’ JSON files, and each release ships it. A process that runs for weeks can fetch them again. Each process holds its own copy; a failed source raises <code>Browser::Error</code> and keeps the current ranges:</p>
+<pre><code class="language-ruby"><span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="o">::</span><span class="no">IPRanges</span><span class="p">.</span><span class="nf">refresh</span> <span class="c1"># fetches every owner's JSON, swaps the ranges at once</span>
+
+<span class="c1"># or fetch once, share them through a cache, and load them in every process</span>
+<span class="n">prefixes_by_owner</span> <span class="o">=</span> <span class="no">Rails</span><span class="p">.</span><span class="nf">cache</span><span class="p">.</span><span class="nf">fetch</span><span class="p">(</span><span class="s2">"bot_ip_ranges"</span><span class="p">,</span> <span class="ss">expires_in: </span><span class="mi">1</span><span class="p">.</span><span class="nf">week</span><span class="p">)</span> <span class="p">{</span> <span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="o">::</span><span class="no">IPRanges</span><span class="p">.</span><span class="nf">fetch</span> <span class="p">}</span>
+<span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="o">::</span><span class="no">IPRanges</span><span class="p">.</span><span class="nf">load</span><span class="p">(</span><span class="n">prefixes_by_owner</span><span class="p">)</span></code></pre>
+      </div>
+    </section>
+
+    <section id="cloudflare" aria-labelledby="cloudflare-title">
+      <h2 id="cloudflare-title">Cloudflare</h2>
+      <div class="prose">
+        <p>Behind Cloudflare, the edge already knows whether a bot is verified, its category and the visitor’s country. A Transform Rule copies what the app needs into request headers, and <code>browser.cloudflare</code> reads them:</p>
+<pre><code class="language-ruby"><span class="n">browser</span><span class="p">.</span><span class="nf">cloudflare</span><span class="p">.</span><span class="nf">verified_bot?</span> <span class="c1"># =&gt; true for a bot Cloudflare verified</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">cloudflare</span><span class="p">.</span><span class="nf">bot_category</span>  <span class="c1"># =&gt; :search_engine_crawler, :ai_crawler… (the names of bot.category)</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">cloudflare</span><span class="p">.</span><span class="nf">bot_score</span>     <span class="c1"># =&gt; 1 (automated) to 99 (human), Bot Management only</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">cloudflare</span><span class="p">.</span><span class="nf">country</span>       <span class="c1"># =&gt; "FR", "XX" when unknown, "T1" for Tor</span></code></pre>
+        <p>The Rails helper and the middleware pass the request’s headers along. Elsewhere, pass the Rack env: <code>Browser.new(user_agent, headers: env)</code>. Each site names its headers in its own rule; the defaults are generic, change any of them:</p>
+<pre><code class="language-ruby"><span class="no">Browser</span><span class="o">::</span><span class="no">Cloudflare</span><span class="p">.</span><span class="nf">header_names</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="ss">verified_bot: </span><span class="s2">"X-Bot-Verified"</span><span class="p">,</span> <span class="c1"># the defaults</span>
+  <span class="ss">bot_category: </span><span class="s2">"X-Bot-Category"</span><span class="p">,</span>
+  <span class="ss">bot_score: </span><span class="s2">"X-Bot-Score"</span><span class="p">,</span>
+  <span class="ss">country: </span><span class="s2">"CF-IPCountry"</span>
+<span class="p">}</span></code></pre>
+        <p><strong>The Transform Rule.</strong> In the Cloudflare dashboard, for your zone:</p>
+        <ol class="steps">
+          <li>Open <em>Rules</em>, then <em>Overview</em>, and create a <em>Request Header Transform Rule</em>. Name it, for example, <em>Bot signals for the app</em>.</li>
+          <li>Under <em>If incoming requests match…</em>, choose <em>All incoming requests</em>: <em>Set</em> replaces whatever header the client sent, so a header the rule sets on every request is one a client can’t forge.</li>
+          <li>Under <em>Then… Modify request header</em>, add one <em>Set dynamic</em> operation per header:
+            <ul>
+              <li><code>X-Bot-Verified</code>, value <code>cf.bot_management.verified_bot</code> (Bot Management), or <code>cf.client.bot</code> on plans without it: both give <code>true</code> or <code>false</code>;</li>
+              <li><code>X-Bot-Category</code>, value <code>cf.verified_bot_category</code>, such as <code>Search Engine Crawler</code> or <code>AI Crawler</code>;</li>
+              <li><code>X-Bot-Score</code>, value <code>cf.bot_management.score</code>, only with Bot Management (Enterprise): leave it out otherwise.</li>
+            </ul>
+          </li>
+          <li>Deploy the rule.</li>
+          <li>For the country, turn on <em>IP Geolocation</em> under <em>Network</em>: Cloudflare then adds <code>CF-IPCountry</code> itself, no rule needed.</li>
+        </ol>
+        <p>The headers prove something only if every request goes through Cloudflare: accept connections on the origin from Cloudflare’s IPs only (or through a tunnel), or a client can reach it with forged headers.</p>
+      </div>
+    </section>
+
+    <section id="client-hints" aria-labelledby="client-hints-title">
+      <h2 id="client-hints-title">Client Hints</h2>
+      <div class="prose">
+        <p>Chromium browsers freeze their user agent: Windows 11 still says <code>Windows NT 10.0</code>, macOS stays at <code>10_15_7</code>, Android at <code>Android 10; K</code>. They send the real values as User-Agent Client Hints, and BrowserX uses them when present, falling back on the user agent otherwise (Safari and Firefox send none). The Rails helper and the middleware pass them along; elsewhere, pass the Rack env as <code>headers:</code>.</p>
+<pre><code class="language-ruby"><span class="n">browser</span> <span class="o">=</span> <span class="no">Browser</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">user_agent</span><span class="p">,</span> <span class="ss">accept_language: </span><span class="n">language</span><span class="p">,</span> <span class="ss">headers: </span><span class="n">rack_env</span><span class="p">)</span>
+
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">windows11?</span>           <span class="c1"># Sec-CH-UA-Platform-Version 13 or more</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">version</span>              <span class="c1"># =&gt; "11", "15.1.0" on macOS 15.1, "15.0.0" on Android 15</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">mobile?</span>                <span class="c1"># Sec-CH-UA-Mobile, when sent</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">client_hints</span><span class="p">.</span><span class="nf">platform</span>         <span class="c1"># =&gt; "Windows"</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">client_hints</span><span class="p">.</span><span class="nf">version_by_brand</span> <span class="c1"># =&gt; {"Chromium" =&gt; "142", "Google Chrome" =&gt; "142"}</span></code></pre>
+        <p><code>Sec-CH-UA</code>, <code>Sec-CH-UA-Mobile</code> and <code>Sec-CH-UA-Platform</code> come with every request. <code>Sec-CH-UA-Platform-Version</code>, which tells Windows 11 from Windows 10, comes only once the site asks for it with a response header, from the next request on:</p>
+<pre><code class="language-ruby"><span class="n">response</span><span class="p">.</span><span class="nf">headers</span><span class="p">[</span><span class="s2">"Accept-CH"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Sec-CH-UA-Platform-Version"</span></code></pre>
+        <p>Without hints, every answer is the user agent’s, as in browser: <code>Browser.new(user_agent, accept_language:)</code> answers exactly as before. Hints that only repeat the user agent reuse its cached detection; the others build a platform and a device for that request alone, never cached under the user agent.</p>
       </div>
     </section>
 

@@ -1,6 +1,7 @@
 name: Bot sync
 
-# Every week, the bots that crawler-user-agents and ai.robots.txt added become a pull request: a human merges it.
+# Every week, the bots that crawler-user-agents and ai.robots.txt added, and the IP ranges crawler owners publish,
+# become a pull request: a human merges it.
 
 on:
   schedule:
@@ -31,9 +32,11 @@ jobs:
         with:
           ruby-version: "4.0"
           bundler-cache: true
-      # One step per source: the next ones (crawler IP ranges) go after this one.
+      # One step per source.
       - name: Sync the user agents
         run: ruby script/sync_bots.rb 2> >(tee "$RUNNER_TEMP/skipped.txt" >&2)
+      - name: Sync the crawler IP ranges
+        run: ruby -I lib script/sync_ip_ranges.rb
       - name: Run the tests
         run: bundle exec rake test
       - name: Snapshot fnando/browser and BrowserX
@@ -51,7 +54,7 @@ jobs:
       - name: Write the pull request body
         run: |
           {
-            echo "The bots that crawler-user-agents and ai.robots.txt added since the last sync, from \`script/sync_bots.rb\`. Review the answers that change, then merge."
+            echo "The bots that crawler-user-agents and ai.robots.txt added since the last sync, from \`script/sync_bots.rb\`, and the crawler IP ranges from \`script/sync_ip_ranges.rb\`. Review the answers that change, then merge."
             echo
             echo "<details><summary>Answers that change on the corpus</summary>"
             echo
@@ -86,11 +89,12 @@ jobs:
           add-paths: |
             bots.yml
             bot_categories.yml
+            bot_ip_ranges.yml
             corpus/expected_differences.jsonl
             docs/bot_coverage.json
             docs/*.html
-          commit-message: Sync the bot lists from crawler-user-agents and ai.robots.txt
-          title: "Bot list: new bots from crawler-user-agents and ai.robots.txt"
+          commit-message: Sync the bot lists from crawler-user-agents and ai.robots.txt, and the crawler IP ranges
+          title: "Bot list: new bots from crawler-user-agents and ai.robots.txt, fresh crawler IP ranges"
           body-path: ${{ runner.temp }}/body.md
       # A pull request opened with the GITHUB_TOKEN starts no workflow, but a dispatch does.
       - name: Run the CI on the pull request

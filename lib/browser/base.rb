@@ -6,11 +6,14 @@ module Browser
 
     attr_reader :ua
 
-    def initialize(ua, accept_language: nil)
+    # headers: the Rack env (request.env), for the client hints and the
+    # Cloudflare headers.
+    def initialize(ua, accept_language: nil, headers: nil)
       validate_size(:user_agent, ua.to_s)
 
       @ua = ua
       @accept_language_raw = accept_language.to_s
+      @headers = headers
     end
 
     # Return a meta info about this browser.
@@ -39,7 +42,15 @@ module Browser
 
     # Return the platform.
     def platform
-      @platform ||= detection.platform
+      @platform ||= detection.platform.with_client_hints(client_hints)
+    end
+
+    def client_hints
+      @client_hints ||= @headers ? ClientHints.new(@headers) : ClientHints::NONE
+    end
+
+    def cloudflare
+      @cloudflare ||= Cloudflare.new(@headers)
     end
 
     # Return the bot info.
@@ -54,7 +65,7 @@ module Browser
 
     # Return the device info.
     def device
-      @device ||= detection.device
+      @device ||= detection.device.with_client_hints(client_hints, platform:)
     end
 
     # Detect if browser is Microsoft Internet Explorer.
