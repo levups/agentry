@@ -2,7 +2,7 @@
 
 require "simplecov"
 SimpleCov.start do
-  add_filter %r{/test/}
+  skip %r{/test/}
 end
 
 ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../Gemfile", __dir__)
