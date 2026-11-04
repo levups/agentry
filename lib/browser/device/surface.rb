@@ -12,7 +12,7 @@ module Browser
       end
 
       def match?
-        platform.windows_rt? && ua.include?("Touch")
+        ua.include?("Touch") && platform.windows_rt?
       end
 
       private def platform
