@@ -47,3 +47,7 @@ over 2,000 distinct user agents and 20 repeated ones, median of 7. Run upstream 
   flag the system tests of apps using BrowserX: keep the categories apart.
 - `lib/browser/testing.rb` reads `test/ua*.yml` at runtime: those fixtures ship in the gem, keep them in
   `s.files`.
+
+## Code style
+
+`STYLE.md` (naming, method size, comments, dead code), a copy of next-gen-gems/.github's: change it there first, then copy it here as is.
