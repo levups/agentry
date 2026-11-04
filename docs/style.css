@@ -31,9 +31,10 @@ pre .gd { color: var(--flagged); }
 .page { max-width: 72rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
 
 .hero { display: grid; grid-template-columns: 1fr; gap: 1.5rem; align-items: end; border-bottom: 1px solid var(--rail); padding-bottom: 2.5rem; }
-@media (min-width: 52rem) { .hero { grid-template-columns: auto 1fr; gap: 3rem; } }
 /* The name is the brief: a tall, narrow wordmark that takes the whole height and almost no width. */
-.wordmark { font: 800 clamp(7rem, 26vw, 19rem)/0.8 "Big Shoulders Display", sans-serif; letter-spacing: -0.02em; margin: 0; color: var(--accent); }
+.wordmark { font: 800 clamp(5rem, 26vw, 19rem)/0.8 "Big Shoulders Display", sans-serif; letter-spacing: -0.02em; margin: 0; color: var(--accent); }
+/* "BrowserX" is 3.3em wide, 1.7× "SlimX": the sister sites' 19rem would leave the byline a 58px column. */
+@media (min-width: 52rem) { .hero { grid-template-columns: auto 1fr; gap: 3rem; } .wordmark { font-size: clamp(7rem, 15vw, 13rem); } }
 .byline { font-size: clamp(1.4rem, 2.6vw, 2rem); line-height: 1.2; font-weight: 600; margin: 0 0 1rem; }
 .byline span { display: block; }
 .byline-sub { color: var(--muted); font-weight: 400; }
