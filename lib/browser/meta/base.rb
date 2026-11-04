@@ -19,9 +19,7 @@ module Browser
     end
 
     def self.get(browser)
-      rules.each_with_object(Set.new) do |rule, meta|
-        meta.merge(rule.new(browser).to_a)
-      end.to_a
+      rules.flat_map { |rule| rule.new(browser).to_a }.uniq
     end
 
     class Base

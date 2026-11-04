@@ -26,7 +26,7 @@ module Browser
     end
 
     private def infer_name
-      (NAMES.find { |key, _| ua.include?(key) } || []).last
+      NAMES.find { |key, _| ua.include?(key) }&.last
     end
   end
 end

@@ -8,19 +8,12 @@ module Browser
         /OS (?<major>\d+)_(?<minor>\d+)_?(?<patch>\d+)?/
 
       def version
-        matches = VERSION_MATCHER.match(ua)
-
-        return "0" unless matches
-
-        versions = [matches[:major]]
-
-        if matches[:patch]
-          versions.push(matches[:minor], matches[:patch])
-        else
-          versions.push(matches[:minor]) unless matches[:minor] == "0"
+        case VERSION_MATCHER.match(ua)
+        in nil then "0"
+        in {major:, minor:, patch: String => patch} then "#{major}.#{minor}.#{patch}"
+        in {major:, minor: "0"} then major
+        in {major:, minor:} then "#{major}.#{minor}"
         end
-
-        versions.join(".")
       end
 
       def name
