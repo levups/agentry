@@ -8,3 +8,15 @@
 - the test fixtures of [fnando/browser](https://github.com/fnando/browser) (`test/ua*.yml`), MIT
 
 `script/corpus_build.rb` rebuilds it from `corpus/sources/`, which is not committed.
+
+## Bot list
+
+`script/sync_bots.rb` writes the synced part of `bots.yml` and `bot_categories.yml` from:
+
+- [monperrus/crawler-user-agents](https://github.com/monperrus/crawler-user-agents) `crawler-user-agents.json`
+  (patterns and tags), MIT, Copyright (c) 2017 Martin Monperrus
+- [ai-robots-txt/ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) `robots.json` (names and
+  functions), MIT, Copyright (c) 2024 ai.robots.txt
+
+`expected_differences.jsonl` lists the answers on `user_agents.txt` where BrowserX differs from fnando/browser at
+`dd88933`, written by `script/corpus_diff.rb --write`.
