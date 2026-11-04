@@ -154,3 +154,6 @@ p code, li code, .rule-message code { overflow-wrap: anywhere; }
 
 .skip-link { position: absolute; left: 1rem; top: -3rem; padding: 0.5rem 0.9rem; background: var(--surface); color: var(--accent); border: 1.5px solid var(--accent); border-radius: 3px; z-index: 1; }
 .skip-link:focus { top: 1rem; }
+.table-scroll { overflow-x: auto; max-width: 60rem; }
+.table-scroll .options td:first-child { white-space: nowrap; }
+tfoot th, tfoot td { font-weight: 600; border-bottom: 0; }

@@ -46,6 +46,8 @@ jobs:
           ruby script/corpus_diff.rb --write "$RUNNER_TEMP/upstream.jsonl" "$RUNNER_TEMP/browserx.jsonl"
       - name: Count the coverage
         run: ruby script/bot_coverage.rb upstream/lib > "$RUNNER_TEMP/coverage.md"
+      - name: Render the site's bot numbers
+        run: ruby script/render_docs.rb
       - name: Write the pull request body
         run: |
           {
@@ -86,6 +88,7 @@ jobs:
             bot_categories.yml
             corpus/expected_differences.jsonl
             docs/bot_coverage.json
+            docs/*.html
           commit-message: Sync the bot lists from crawler-user-agents and ai.robots.txt
           title: "Bot list: new bots from crawler-user-agents and ai.robots.txt"
           body-path: ${{ runner.temp }}/body.md

@@ -116,5 +116,15 @@
     "upstream_bots": 1641,
     "browserx_bots": 2264,
     "browserx_categorized": 2270
+  },
+  "recent_crawlers": {
+    "added_since": "2024-01-01",
+    "left_out_tags": [
+      "browser-automation",
+      "scanner"
+    ],
+    "user_agents": 882,
+    "upstream_bots": 529,
+    "browserx_bots": 871
   }
 }
