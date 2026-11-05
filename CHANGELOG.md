@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [3.0.0] — 2026-11-05
+
+The gem is renamed Agentry and lives at levups/agentry; the API is untouched.
+
+**Breaking**
+- The gem is now `agentry`: replace `gem "browserx"` with `gem "agentry"` in the Gemfile (or `gem "agentry", require: "browser/browser"`). `require "browser"`, the `Browser` namespace and every predicate stay. `require "browserx"` becomes `require "agentry"`.
+
 ## [2.1.0] — 2026-11-05
 
 The first request of each process gets cheaper: the lists ship as JSON, and `Browser.eager_load!` builds them
@@ -79,7 +86,8 @@ First release, forked from browser 6.2.0 (`dd88933`). Same API: `gem "agentry"` 
 - A corpus of 20,328 user agents, with snapshot and diff scripts proving answers match upstream, and a
   request benchmark.
 
-[Unreleased]: https://github.com/levups/agentry/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/levups/agentry/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/levups/agentry/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/levups/agentry/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/levups/agentry/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/levups/agentry/releases/tag/v1.0.0
