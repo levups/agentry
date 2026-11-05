@@ -14,25 +14,31 @@ module Browser
       DEFAULT_MATCHERS.dup
     end
 
+    # browser's API. The gem ships its lists as JSON only: load_yaml("bots.yml")
+    # reads data/bots.json.
     def self.load_yaml(path)
+      json_path = Browser.root.join("data", path.to_s.sub(/\.yml\z/, ".json"))
+      return JSON.load_file(json_path) if json_path.file?
+
+      require "yaml"
       YAML.load_file(Browser.root.join(path))
     end
 
     def self.bots
-      @bots ||= load_yaml("bots.yml")
+      @bots ||= Browser.load_data("bots")
     end
 
     def self.bot_exceptions
-      @bot_exceptions ||= load_yaml("bot_exceptions.yml")
+      @bot_exceptions ||= Browser.load_data("bot_exceptions")
     end
 
     def self.search_engines
-      @search_engines ||= load_yaml("search_engines.yml")
+      @search_engines ||= Browser.load_data("search_engines")
     end
 
     def self.category_by_keyword
       @category_by_keyword ||=
-        load_yaml("bot_categories.yml").each_with_object({}) do |(category, keywords), category_by_keyword|
+        Browser.load_data("bot_categories").each_with_object({}) do |(category, keywords), category_by_keyword|
           keywords.each { |keyword| category_by_keyword[keyword] = category.to_sym }
         end
     end

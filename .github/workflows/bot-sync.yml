@@ -37,6 +37,8 @@ jobs:
         run: ruby script/sync_bots.rb 2> >(tee "$RUNNER_TEMP/skipped.txt" >&2)
       - name: Sync the crawler IP ranges
         run: ruby -I lib script/sync_ip_ranges.rb
+      - name: Write the JSON the gem reads
+        run: ruby script/build_data.rb
       - name: Run the tests
         run: bundle exec rake test
       - name: Snapshot fnando/browser and BrowserX
@@ -90,6 +92,7 @@ jobs:
             bots.yml
             bot_categories.yml
             bot_ip_ranges.yml
+            data/*.json
             corpus/expected_differences.jsonl
             docs/bot_coverage.json
             docs/*.html

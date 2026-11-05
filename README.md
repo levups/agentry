@@ -384,7 +384,7 @@ Browser::Bot.category_by_keyword["faraday"] = :http_library
 ### Verified crawlers
 
 Google, Bing, OpenAI, Apple, Perplexity and DuckDuckGo publish their crawlers' IP ranges. They ship in
-`bot_ip_ranges.yml`, rewritten by the weekly sync (`script/sync_ip_ranges.rb`). The lookup is a binary search, no
+`bot_ip_ranges.yml` (as JSON in the gem), rewritten by the weekly sync (`script/sync_ip_ranges.rb`). The lookup is a binary search, no
 network call; an IP that does not parse answers `false`.
 
 ```ruby
@@ -499,6 +499,8 @@ The weekly bot sync (`.github/workflows/bot-sync.yml`) runs the same steps by ha
 
 ```bash
 ruby script/sync_bots.rb                         # bots.yml and bot_categories.yml
+ruby -I lib script/sync_ip_ranges.rb             # bot_ip_ranges.yml
+ruby script/build_data.rb                        # data/*.json, what the gem reads, from the *.yml
 ruby script/bot_coverage.rb path/to/upstream/lib # docs/bot_coverage.json, and its Markdown table
 ruby script/render_docs.rb                       # the site's numbers, from docs/*.json and the lists
 ```
