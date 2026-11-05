@@ -1,99 +1,91 @@
 # Agentry
 
-Fork of [fnando/browser](https://github.com/fnando/browser) (MIT, dormant since June 2025) by Level UP Solutions:
-`gem "agentry"` replaces `gem "browser"` without touching a call site, but faster, with a bot list kept fresh and
-more signals (bot categories, verified crawler IPs, Cloudflare headers, Client Hints). Roadmap: the GitHub issues.
+A fork of [fnando/browser](https://github.com/fnando/browser) (MIT, dormant since June 2025). `gem "agentry"`
+replaces `gem "browser"` without touching a call site, but is faster, keeps its bot list fresh and adds signals: bot
+categories, verified crawler IPs, Cloudflare headers, Client Hints. The roadmap is in the GitHub issues.
 
-## The API stays 1:1
+Read `README.md` for usage, `STYLE.md` for code style and `CONTRIBUTING.md` for contributions; this file only
+adds what they leave out.
 
-- `Browser.new(ua, accept_language:)`, every predicate and every `require` path of `browser` keep working
-  unchanged. New features are additions (`bot.category`), never changed meanings.
-- The upstream suite (`bundle exec rake test`) stays green, unmodified. New behaviour gets new tests.
-- Supported: every maintained Ruby and Rails (endoflife.date), today Ruby 3.3+ and Rails 8.0, 8.1. CI
-  (`.github/workflows/ci.yml`) runs RuboCop, then the tests on each of them: `bundle exec rubocop` stays clean.
+## Commands
 
-## Corpus diff
-
-A change not meant to change an answer proves it on the 20,328 user agents of `corpus/` (CI's Corpus diff job):
-
-```bash
+```sh
+bundle exec rake test                                                        # upstream's suite, unmodified, and ours
+bundle exec rubocop
 ruby -I path/to/upstream/lib script/corpus_snapshot.rb > /tmp/upstream.jsonl # fnando/browser at dd88933
 ruby -I lib script/corpus_snapshot.rb > /tmp/agentry.jsonl
-ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/agentry.jsonl
+ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/agentry.jsonl            # --write records the differences
+ruby script/build_data.rb                                                    # data/*.json from the root *.yml
+bundle exec rake bench UPSTREAM=path/to/upstream                             # on an idle machine
+bundle exec rake docs:render docs:highlight
 ```
 
-A change meant to change answers (a fresher bot list) lists the differences it expects in
-`corpus/expected_differences.jsonl` (`corpus_diff.rb --write`); the diff passes when it shows exactly those.
-A method upstream lacks (`bot.owner`, `platform.windows11?`) is an addition: the diff only compares upstream's.
-
-## Benchmark
-
-`bench/request.rb` replays a web request's questions (name, version, `bot?`, platform, device, accept-language)
-over 2,000 distinct user agents and 20 repeated ones, median of 7. `bundle exec rake bench UPSTREAM=path/to/upstream`
-runs upstream and Agentry, without JIT and with `--yjit`, one at a time: run it on an idle machine. Ruby 4.0.9,
-YJIT, Apple M4 Max: browser 6.2.0 126 µs / 245 objects per request, Agentry 25 µs / 52 objects on a new user
-agent, 2 µs / 12 objects on a repeated one.
-
-## The site
-
-`docs/` is the GitHub Pages site. Its numbers sit between `<!-- render:name -->` markers, rewritten by
-`script/render_docs.rb` from `docs/benchmarks.json` (`bench/request.rb --write`), `docs/bot_coverage.json`
-(`script/bot_coverage.rb`, the weekly sync), the bot lists and `corpus/expected_differences.jsonl`: never type a
-number there, CI's docs job fails when a page differs from what `rake docs:render` writes. A new code block needs
-`rake docs:highlight`.
-
-## Data source licences
-
-- Allowed, credited in `corpus/SOURCES.md` and the README: monperrus/crawler-user-agents (MIT),
-  ai-robots-txt/ai.robots.txt (MIT), ua-parser/uap-core (Apache 2.0), IP ranges published by the crawlers'
-  owners (Google, Bing, OpenAI, Apple, Perplexity…).
-- Never embedded: matomo-org/device-detector (LGPL-3.0; a local oracle at most), the Cloudflare Radar bots
-  directory (CC BY-NC). From Cloudflare we only read the headers it sets on requests.
+CI also runs `ruby-head`, `jruby-head` and `truffleruby-head`, the corpus diff and the docs checks.
 
 ## Traps
 
-- `crawler-user-agents` calls "bot" anything that is not a human browser: crawlers, but also test drivers
-  (Playwright, Puppeteer, Selenium), scripts (`curl`, `got`) and scanners. Widening `bot?` with it blindly would
-  flag the system tests of apps using Agentry: keep the categories apart. `browser_automation` never makes
-  `bot?` true; `script/sync_bots.rb` leaves out keywords that would flag a corpus browser (`IGNORED_KEYWORDS`).
-- `bots.yml` above its marker line is curated (browser's list), below it is rewritten by `script/sync_bots.rb`:
-  edit above, or the next sync drops the change.
-- The `*.yml` at the root are the sources; the gem ships and reads `data/*.json`, written from them by
-  `ruby script/build_data.rb` (JSON loads about 30 times faster). After editing a `.yml`, run it: `DataTest` fails
-  on a stale JSON.
-- `lib/browser/testing.rb` reads `test/ua*.yml` at runtime: those fixtures ship in the gem, keep them in
+- The API stays 1:1 with browser: `Browser.new(ua, accept_language:)`, every predicate and every `require` path keep
+  working. New features are additions (`bot.category`), never changed meanings. Upstream's tests stay unmodified;
+  new behaviour gets new tests.
+- A change not meant to change an answer proves it with the corpus diff over the user agents in `corpus/`. A change
+  meant to change answers (a fresher bot list) records the differences it expects in
+  `corpus/expected_differences.jsonl` with `--write`.
+- The numbers in `docs/*.html` sit between `<!-- render:name -->` markers and come from `docs/*.json`, the bot
+  lists and the expected differences. Never type one by hand: CI fails when a page differs from what
+  `rake docs:render` writes. A new code block needs `rake docs:highlight`.
+- `crawler-user-agents` calls "bot" anything that is not a human browser, including test drivers (Playwright,
+  Selenium), scripts (`curl`) and scanners. Keep the categories apart: `browser_automation` never makes `bot?` true,
+  or apps using Agentry would flag their own system tests. `script/sync_bots.rb` skips keywords that would flag a
+  corpus browser (`IGNORED_KEYWORDS`).
+- `bots.yml` is curated above its marker line and rewritten by `script/sync_bots.rb` below it: edit above, or the
+  next sync drops your change.
+- The `*.yml` at the root are the sources; the gem reads `data/*.json`, built from them. After editing a `.yml`, run
+  `script/build_data.rb`: `DataTest` fails on a stale JSON.
+- `lib/browser/testing.rb` reads `test/ua*.yml` at runtime, so those fixtures ship in the gem: keep them in
   `s.files`.
+- Data sources: only MIT or Apache 2.0 lists (credited in `corpus/SOURCES.md` and the README) and IP ranges the
+  crawlers' owners publish. Never embed matomo-org/device-detector (LGPL-3.0) or Cloudflare Radar's bots directory
+  (CC BY-NC); from Cloudflare we only read the headers it sets.
 
-## Code style
+## Rules for all our gems
 
-Follow `STYLE.md` (naming, method size, comments, dead code): what RuboCop can't settle.
+This section and the next two read the same in super-slim, gamba, crumbly and agentry: change all four together.
 
-## Changelog and releases
-
-- Never edit `CHANGELOG.md` in a PR: any two PRs adding a line there conflict. The changelog is written when
-  releasing, from the PRs merged since the last tag; a PR title says what changes for users.
-- A draft runs no CI, so it never turns green. Confident in the change: open the pull request ready for review,
-  auto-merge on. Not yet: a draft, then `gh pr ready` when it needs the CI.
-- To release, read every PR merged since the last tag (`git log --first-parent --oneline <tag>..origin/main`,
-  squash merges end in `(#n)`, then `gh pr view n`), and write the release under `## [Unreleased]` without
-  committing it: a one-sentence lede, then **Breaking**, **New**, **Faster** (measured, with and without YJIT)
-  and **Fixed**, only those with entries. One entry per change users can see, written for them: several PRs may
-  make one, CI, refactoring, docs and tests make none. Show it to the user, then `bin/release` commits it with
-  the version. No version heading, date or link by hand: `bin/release` writes them.
-- `main` takes no direct push, ours included: every change, a release too, goes through a pull request that merges
-  itself once the required CI checks are green (`gh pr merge --auto --squash`).
-- `bin/release patch|minor|major` cuts a release from a green, up-to-date `main` through such a pull request, then
-  tags its merge commit (README, Releasing), and `.github/workflows/release.yml` publishes it. Both are the same in
-  every Level UP Solutions gem: change them in all four at once.
-- RubyGems trusts the Release workflow (trusted publishing): never `gem push` from a machine.
+- Every maintained Ruby and Rails (https://endoflife.date), nothing older. The oldest sets `required_ruby_version`,
+  `TargetRubyVersion` and the Rails floor, and leaves in the release after its end of life.
+- CI runs RuboCop and the tests on each maintained Ruby. No macOS job: we test on our Macs.
+- `.claude/hooks/rubocop.sh` autocorrects each Ruby file you edit.
+- Measure performance without JIT and with YJIT. A Performance cop the numbers contradict is disabled on its line,
+  with the reason. A pure performance change pins no internals in tests.
+- Test and bench data are anonymized: `alice`, `Post`, `example.com`.
+- Everything in the repository is in English (code, comments, commits, pull requests, issues, reviews, replies),
+  whatever the language of the conversation.
+- No AI attribution in anything people read.
 
 ## Pull requests and issues
 
-- Title: the change as a user sees it (an issue: the finding), in plain words, under 70 characters.
-- Body, no headings: two short paragraphs, the problem then the change (an issue: what to do); 3 to 5 bullets,
-  each a **bold 2–4 word lead-in** and two lines at most (decisions, divergences, what is left out); the proof
-  (reproduction, tests, fuzz seeds, benchmarks) folded in one `<details>`. Nothing the diff or the CI says.
-- Never hard-wrap a pull request, an issue or a comment: GitHub renders each line break, so text wrapped at
-  80 columns reads broken. One line per paragraph and per bullet, however long.
-- Everything here is in English: code, comments, commits, pull requests, issues, reviews and replies, whatever
-  the language of the conversation that produced them.
+- `main` takes no direct push. Every change, releases included, goes through a pull request that merges itself
+  once CI is green: `gh pr merge --auto --squash`.
+- Drafts run no CI. Confident in the change? Open it ready for review, auto-merge on. Not yet? Open a draft, then
+  `gh pr ready` when it needs CI.
+- Never edit `CHANGELOG.md` in a pull request: they would all conflict. It is written at release time.
+- Title: the change as a user sees it (for an issue, the finding), in plain words, under 70 characters.
+- Body, no headings: two short paragraphs, the problem then the change (for an issue, what to do); 3 to 5 bullets,
+  each opening with a **bold 2–4 word lead-in**; the proof (reproduction, tests, benchmarks) folded in one
+  `<details>`. Nothing the diff or CI already says.
+- Never hard-wrap a pull request, an issue or a comment: GitHub renders every line break. One line per paragraph
+  and per bullet.
+
+## Releases
+
+1. List the pull requests merged since the last tag: `git log --first-parent --oneline <tag>..origin/main`, then
+   `gh pr view <n>` for each.
+2. Write the release under `## [Unreleased]` in `CHANGELOG.md`, uncommitted: a one-sentence lede, then
+   **Breaking**, **New**, **Faster** (measured) and **Fixed**, only those with entries. One entry per change users
+   can see, written for them; CI, refactoring, docs and tests get none. No version, date or link: `bin/release`
+   adds them.
+3. Show it to the user. Then `bin/release patch|minor|major` (try `--dry-run` first) commits it through a pull
+   request, waits for the merge and tags it; the tag runs `.github/workflows/release.yml`, which publishes the gem.
+
+RubyGems trusts only that workflow: never `gem push` from a machine, except the very first version of a new gem
+name. `bin/release` and `release.yml` are the same in all four gems.
