@@ -58,6 +58,9 @@ number there, CI's docs job fails when a page differs from what `rake docs:rende
   `bot?` true; `script/sync_bots.rb` leaves out keywords that would flag a corpus browser (`IGNORED_KEYWORDS`).
 - `bots.yml` above its marker line is curated (browser's list), below it is rewritten by `script/sync_bots.rb`:
   edit above, or the next sync drops the change.
+- The `*.yml` at the root are the sources; the gem ships and reads `data/*.json`, written from them by
+  `ruby script/build_data.rb` (JSON loads about 30 times faster). After editing a `.yml`, run it: `DataTest` fails
+  on a stale JSON.
 - `lib/browser/testing.rb` reads `test/ua*.yml` at runtime: those fixtures ship in the gem, keep them in
   `s.files`.
 

@@ -6,7 +6,7 @@ module Browser
       REGEX = /\(Linux.*?; Android.*?; (SAMSUNG )?(SM-[A-Z0-9]+).*?\)/i
 
       def self.names
-        @names ||= YAML.load_file(Browser.root.join("samsung.yml").to_s)
+        @names ||= Browser.load_data("samsung")
       end
 
       def id

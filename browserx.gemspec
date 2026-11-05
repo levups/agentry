@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.metadata["documentation_uri"] = "https://next-gen-gems.github.io/browserx/"
   s.metadata["bug_tracker_uri"] = "#{s.homepage}/issues"
 
-  s.files = Dir["lib/**/*.rb", "*.yml", "test/ua*.yml",
+  s.files = Dir["lib/**/*.rb", "data/*.json", "test/ua*.yml",
     "README.md", "LICENSE.md", "CHANGELOG.md"]
   s.require_paths = ["lib"]
 

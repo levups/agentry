@@ -127,7 +127,6 @@ class VerifiedBotsTest < Minitest::Test
       refute_empty prefixes, owner
       assert_equal prefixes.uniq.size, prefixes.size, owner
     end
-    assert_includes Browser.root.join("browserx.gemspec").read, "*.yml"
   end
 
   test "load swaps the ranges at runtime" do

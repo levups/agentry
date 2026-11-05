@@ -5,7 +5,7 @@ if Gem.loaded_specs.key?("browser")
     "remove gem \"browser\" from the Gemfile (or whatever depends on it)"
 end
 
-require "yaml"
+require "json"
 require "pathname"
 
 require_relative "version"
@@ -69,6 +69,11 @@ module Browser
 
   def self.root
     @root ||= Pathname.new(File.expand_path("../..", __dir__))
+  end
+
+  # data/bots.json for "bots", written from bots.yml by script/build_data.rb: edit the YAML.
+  def self.load_data(name)
+    JSON.load_file(root.join("data", "#{name}.json"))
   end
 
   class << self

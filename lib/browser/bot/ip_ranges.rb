@@ -91,7 +91,7 @@ module Browser
 
       # Prefixes ("66.249.64.0/27"), keyed by owner.
       def self.prefixes_by_owner
-        @prefixes_by_owner ||= Bot.load_yaml("bot_ip_ranges.yml").transform_keys(&:to_sym)
+        @prefixes_by_owner ||= Browser.load_data("bot_ip_ranges").transform_keys(&:to_sym)
       end
 
       def self.ranges_by_owner
