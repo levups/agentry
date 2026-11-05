@@ -76,6 +76,17 @@ module Browser
     JSON.load_file(root.join("data", "#{name}.json"))
   end
 
+  def self.eager_load!
+    [self, Platform, Device, Bot].each(&:matchers)
+    Meta.rules
+    AcceptLanguage.languages
+    Device::Samsung.names
+    Bot.known_bots_trie
+    [Bot.bot_exceptions, Bot.search_engines, Bot.category_by_keyword].each { |keywords| Bot.keywords_pattern(keywords) }
+    Bot::IPRanges.ranges_by_owner
+    nil
+  end
+
   class << self
     attr_accessor :user_agent_size_limit, :accept_language_size_limit
     attr_reader :cache_size

@@ -460,6 +460,17 @@ costs about 2 µs. The cache empties itself when full, and when `Browser.matcher
 Browser.cache_size = 5_000 # 0 turns it off
 ```
 
+### Preloading before a fork
+
+The lists, the matchers and the bot keyword tries are built on first use: the first request of each process pays
+about 13 ms for them, the next ones 0.2 ms. `Browser.eager_load!` builds them up front, so a server that preloads
+its app before forking (Puma's `preload_app!`, Unicorn, Pitchfork) shares them with every worker. Rails calls it on
+its own when it eager loads, which production does by default. Elsewhere, call it before the fork:
+
+```ruby
+Browser.eager_load!
+```
+
 ## Performance
 
 `bench/request.rb` replays what a web request asks (name, version, `bot?`, platform, device, accept-language) over

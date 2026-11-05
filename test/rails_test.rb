@@ -29,4 +29,8 @@ class RailsTest < Minitest::Test
     assert JSON.parse(last_response.body)["isBot"]
     assert_equal "en-US", JSON.parse(last_response.body)["acceptLanguages"][0]
   end
+
+  test "eager loads with the app, before a server forks" do
+    assert_includes Rails.application.config.eager_load_namespaces, Browser
+  end
 end
