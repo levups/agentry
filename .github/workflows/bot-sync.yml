@@ -41,14 +41,14 @@ jobs:
         run: ruby script/build_data.rb
       - name: Run the tests
         run: bundle exec rake test
-      - name: Snapshot fnando/browser and BrowserX
+      - name: Snapshot fnando/browser and Agentry
         run: |
           ruby -I upstream/lib script/corpus_snapshot.rb > "$RUNNER_TEMP/upstream.jsonl"
-          ruby -I lib script/corpus_snapshot.rb > "$RUNNER_TEMP/browserx.jsonl"
+          ruby -I lib script/corpus_snapshot.rb > "$RUNNER_TEMP/agentry.jsonl"
       - name: List the answers that change
         run: |
-          ruby script/corpus_diff.rb "$RUNNER_TEMP/upstream.jsonl" "$RUNNER_TEMP/browserx.jsonl" > "$RUNNER_TEMP/changes.txt" || true
-          ruby script/corpus_diff.rb --write "$RUNNER_TEMP/upstream.jsonl" "$RUNNER_TEMP/browserx.jsonl"
+          ruby script/corpus_diff.rb "$RUNNER_TEMP/upstream.jsonl" "$RUNNER_TEMP/agentry.jsonl" > "$RUNNER_TEMP/changes.txt" || true
+          ruby script/corpus_diff.rb --write "$RUNNER_TEMP/upstream.jsonl" "$RUNNER_TEMP/agentry.jsonl"
       - name: Count the coverage
         run: ruby script/bot_coverage.rb upstream/lib > "$RUNNER_TEMP/coverage.md"
       - name: Render the site's bot numbers

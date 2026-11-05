@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Writes data/*.json from the *.yml at the root, the files BrowserX reads at runtime: JSON loads them about 30
+# Writes data/*.json from the *.yml at the root, the files Agentry reads at runtime: JSON loads them about 30
 # times faster than YAML without Bootsnap. The YAML stays the source, with its comments and its curated part;
 # DataTest fails on a stale JSON.
 #   ruby script/build_data.rb

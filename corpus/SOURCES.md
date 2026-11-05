@@ -25,5 +25,5 @@ verify its crawlers (the URLs are in `Browser::Bot::IPRanges::SOURCES`): Google 
 user-triggered fetchers and agents), Bing (bingbot), OpenAI (GPTBot, OAI-SearchBot, ChatGPT-User), Apple
 (Applebot), Perplexity (PerplexityBot, Perplexity-User) and DuckDuckGo (DuckDuckBot, DuckAssistBot).
 
-`expected_differences.jsonl` lists the answers on `user_agents.txt` where BrowserX differs from fnando/browser at
+`expected_differences.jsonl` lists the answers on `user_agents.txt` where Agentry differs from fnando/browser at
 `dd88933`, written by `script/corpus_diff.rb --write`.

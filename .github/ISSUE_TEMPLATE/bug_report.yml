@@ -21,6 +21,6 @@ body:
     id: versions
     attributes:
       label: Versions
-      placeholder: BrowserX 1.0.0 (or commit), Ruby 4.0.1, Rails 8.1
+      placeholder: Agentry 1.0.0 (or commit), Ruby 4.0.1, Rails 8.1
     validations:
       required: true

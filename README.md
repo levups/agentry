@@ -1,7 +1,7 @@
-# BrowserX
+# Agentry
 
 Browser detection for Ruby, with ActionController integration: the API of the
-[browser](https://rubygems.org/gems/browser) gem, faster, and a bot list that stays fresh. Put `gem "browserx"` in
+[browser](https://rubygems.org/gems/browser) gem, faster, and a bot list that stays fresh. Put `gem "agentry"` in
 your Gemfile instead of `gem "browser"`, and every call site keeps working — same `Browser` namespace, same
 `require "browser"`, same predicates.
 
@@ -10,17 +10,17 @@ your Gemfile instead of `gem "browser"`, and every call site keeps working — s
 - **Fresher bots**: synced every week from [crawler-user-agents](https://github.com/monperrus/crawler-user-agents)
   and [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt), with categories (`bot.category`, `bot.ai?`).
   Of the 882 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out),
-  browser misses 353, BrowserX 11.
+  browser misses 353, Agentry 11.
 - **Verified signals**: `bot.verified?(ip)` checks a crawler against the IP ranges Google, Bing, OpenAI, Apple,
   Perplexity and DuckDuckGo publish, `browser.cloudflare` reads the headers of a Cloudflare Transform Rule, and
   Chromium's Client Hints tell Windows 11 from Windows 10.
 
-Site: https://next-gen-gems.github.io/browserx/
+Site: https://levups.github.io/agentry/
 
 ## Installation
 
 ```ruby
-gem "browserx"
+gem "agentry"
 ```
 
 ## Usage
@@ -196,9 +196,9 @@ end
 
 ### Migrating from browser
 
-Replace `gem "browser"` with `gem "browserx"` in the Gemfile, nothing else: `require "browser"`, the `Browser`
-namespace and every predicate stay. Both gems define `Browser`, so BrowserX refuses to load next to `browser`,
-with an error saying so, rather than letting one silently override the other. BrowserX requires Ruby 3.3 or later
+Replace `gem "browser"` with `gem "agentry"` in the Gemfile, nothing else: `require "browser"`, the `Browser`
+namespace and every predicate stay. Both gems define `Browser`, so Agentry refuses to load next to `browser`,
+with an error saying so, rather than letting one silently override the other. Agentry requires Ruby 3.3 or later
 and is tested on Rails 8.0 and 8.1.
 
 What changes on its own: the bots of the weekly sync are bots from the day you switch (600 user agents of the
@@ -206,14 +206,14 @@ corpus that browser took for humans), so analytics that leave bots out count few
 user agents named `Generic Bot` get a name; no browser, platform or device answer moves, and test drivers stay out
 of `bot?`. To roll back, put `gem "browser"` back, after removing the calls to what browser lacks
 (`Browser.cache_size=`, `bot.category`, `bot.ai?`, `bot.user_triggered?`). The
-[migration guide](https://next-gen-gems.github.io/browserx/guide.html#migrating) has the details.
+[migration guide](https://levups.github.io/agentry/guide.html#migrating) has the details.
 
 ### Rails integration
 
 Just add it to the Gemfile.
 
 ```ruby
-gem "browserx"
+gem "agentry"
 ```
 
 This adds a helper method called `browser`, that inspects your current user
@@ -229,7 +229,7 @@ If you want to use Browser on your Rails app but don't want to taint your
 controller, use the following line on your Gemfile:
 
 ```ruby
-gem "browserx", require: "browser/browser"
+gem "agentry", require: "browser/browser"
 ```
 
 ### Accept Language
@@ -332,8 +332,8 @@ Every week, `script/sync_bots.rb` adds the bots of
 [crawler-user-agents](https://github.com/monperrus/crawler-user-agents) and
 [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) (both MIT) to the end of `bots.yml`, and
 categorizes them in `bot_categories.yml`, through a pull request that lists the answers that change. How many of
-those lists' bots browser and BrowserX detect, per category, is on the
-[Bots page](https://next-gen-gems.github.io/browserx/bots.html#coverage).
+those lists' bots browser and Agentry detect, per category, is on the
+[Bots page](https://levups.github.io/agentry/bots.html#coverage).
 
 `browser.bot.category` names what the bot declares it is, with the names of Cloudflare's verified bot categories
 where one fits (`search_engine_crawler`, `ai_crawler`, `ai_search`, `ai_assistant`, `page_preview`,
@@ -402,7 +402,7 @@ and the middleware pass them. `browser.cloudflare` reads the headers a Cloudflar
 `Browser::Cloudflare.header_names = {bot_score: "X-My-Score"}`. Chromium's Client Hints (`Sec-CH-UA`,
 `Sec-CH-UA-Mobile`, `Sec-CH-UA-Platform`, `Sec-CH-UA-Platform-Version`) refine the platform and the device, and
 `browser.platform.windows11?` needs them. Without `headers:`, every answer is the user agent's, as before. The
-rule to create and the details are in the [guide](https://next-gen-gems.github.io/browserx/guide.html#cloudflare).
+rule to create and the details are in the [guide](https://levups.github.io/agentry/guide.html#cloudflare).
 
 `bench/signals.rb` measures what they cost.
 
@@ -475,9 +475,9 @@ Browser.eager_load!
 
 `bench/request.rb` replays what a web request asks (name, version, `bot?`, platform, device, accept-language) over
 2,000 distinct user agents of the corpus and over 20 repeated ones, median of 7. On Ruby 4.0.9 with YJIT, browser
-6.2.0 takes 126 µs and 245 objects per request, BrowserX 25 µs and 52 objects on a new user agent, 2 µs and 12
+6.2.0 takes 126 µs and 245 objects per request, Agentry 25 µs and 52 objects on a new user agent, 2 µs and 12
 objects on a repeated one. All four runs, with and without YJIT, are on the
-[benchmarks page](https://next-gen-gems.github.io/browserx/benchmarks.html).
+[benchmarks page](https://levups.github.io/agentry/benchmarks.html).
 
 ```bash
 bundle exec rake bench UPSTREAM=path/to/upstream # fnando/browser at dd88933
@@ -499,8 +499,8 @@ clone of [fnando/browser](https://github.com/fnando/browser) at `dd88933`, as CI
 
 ```bash
 ruby -I path/to/upstream/lib script/corpus_snapshot.rb > /tmp/upstream.jsonl
-ruby -I lib script/corpus_snapshot.rb > /tmp/browserx.jsonl
-ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/browserx.jsonl
+ruby -I lib script/corpus_snapshot.rb > /tmp/agentry.jsonl
+ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/agentry.jsonl
 ```
 
 The diff passes when the answers that differ are exactly those of `corpus/expected_differences.jsonl`: a change

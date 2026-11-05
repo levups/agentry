@@ -1,7 +1,7 @@
-# BrowserX
+# Agentry
 
 Fork of [fnando/browser](https://github.com/fnando/browser) (MIT, dormant since June 2025) by Level UP Solutions:
-`gem "browserx"` replaces `gem "browser"` without touching a call site, but faster, with a bot list kept fresh and
+`gem "agentry"` replaces `gem "browser"` without touching a call site, but faster, with a bot list kept fresh and
 more signals (bot categories, verified crawler IPs, Cloudflare headers, Client Hints). Roadmap: the GitHub issues.
 
 ## The API stays 1:1
@@ -18,8 +18,8 @@ A change not meant to change an answer proves it on the 20,328 user agents of `c
 
 ```bash
 ruby -I path/to/upstream/lib script/corpus_snapshot.rb > /tmp/upstream.jsonl # fnando/browser at dd88933
-ruby -I lib script/corpus_snapshot.rb > /tmp/browserx.jsonl
-ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/browserx.jsonl
+ruby -I lib script/corpus_snapshot.rb > /tmp/agentry.jsonl
+ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/agentry.jsonl
 ```
 
 A change meant to change answers (a fresher bot list) lists the differences it expects in
@@ -30,8 +30,8 @@ A method upstream lacks (`bot.owner`, `platform.windows11?`) is an addition: the
 
 `bench/request.rb` replays a web request's questions (name, version, `bot?`, platform, device, accept-language)
 over 2,000 distinct user agents and 20 repeated ones, median of 7. `bundle exec rake bench UPSTREAM=path/to/upstream`
-runs upstream and BrowserX, without JIT and with `--yjit`, one at a time: run it on an idle machine. Ruby 4.0.9,
-YJIT, Apple M4 Max: browser 6.2.0 126 µs / 245 objects per request, BrowserX 25 µs / 52 objects on a new user
+runs upstream and Agentry, without JIT and with `--yjit`, one at a time: run it on an idle machine. Ruby 4.0.9,
+YJIT, Apple M4 Max: browser 6.2.0 126 µs / 245 objects per request, Agentry 25 µs / 52 objects on a new user
 agent, 2 µs / 12 objects on a repeated one.
 
 ## The site
@@ -54,7 +54,7 @@ number there, CI's docs job fails when a page differs from what `rake docs:rende
 
 - `crawler-user-agents` calls "bot" anything that is not a human browser: crawlers, but also test drivers
   (Playwright, Puppeteer, Selenium), scripts (`curl`, `got`) and scanners. Widening `bot?` with it blindly would
-  flag the system tests of apps using BrowserX: keep the categories apart. `browser_automation` never makes
+  flag the system tests of apps using Agentry: keep the categories apart. `browser_automation` never makes
   `bot?` true; `script/sync_bots.rb` leaves out keywords that would flag a corpus browser (`IGNORED_KEYWORDS`).
 - `bots.yml` above its marker line is curated (browser's list), below it is rewritten by `script/sync_bots.rb`:
   edit above, or the next sync drops the change.
@@ -84,7 +84,7 @@ Follow `STYLE.md` (naming, method size, comments, dead code): what RuboCop can't
   itself once the required CI checks are green (`gh pr merge --auto --squash`).
 - `bin/release patch|minor|major` cuts a release from a green, up-to-date `main` through such a pull request, then
   tags its merge commit (README, Releasing), and `.github/workflows/release.yml` publishes it. Both are the same in
-  every next-gen-gems gem: change them in all four at once.
+  every Level UP Solutions gem: change them in all four at once.
 - RubyGems trusts the Release workflow (trusted publishing): never `gem push` from a machine.
 
 ## Pull requests and issues

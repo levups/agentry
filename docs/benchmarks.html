@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BrowserX Benchmarks</title>
-<meta name="description" content="BrowserX against the browser gem: time and objects allocated per request, measured by bench/request.rb.">
-<link rel="canonical" href="https://next-gen-gems.github.io/browserx/benchmarks.html">
-<meta property="og:title" content="BrowserX Benchmarks">
-<meta property="og:description" content="BrowserX against the browser gem: time and objects allocated per request, measured by bench/request.rb.">
+<title>Agentry Benchmarks</title>
+<meta name="description" content="Agentry against the browser gem: time and objects allocated per request, measured by bench/request.rb.">
+<link rel="canonical" href="https://levups.github.io/agentry/benchmarks.html">
+<meta property="og:title" content="Agentry Benchmarks">
+<meta property="og:description" content="Agentry against the browser gem: time and objects allocated per request, measured by bench/request.rb.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://next-gen-gems.github.io/browserx/benchmarks.html">
-<meta property="og:site_name" content="Next Gen Gems">
+<meta property="og:url" content="https://levups.github.io/agentry/benchmarks.html">
+<meta property="og:site_name" content="Level UP Solutions">
 <meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#0b7a6f">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -23,17 +23,17 @@
 <a class="skip-link" href="#content">Skip to content</a>
 <div class="page">
   <nav class="site-nav" aria-label="Site">
-    <a class="brand" href="./">BrowserX</a>
+    <a class="brand" href="./">Agentry</a>
     <a href="guide.html">Guide</a>
     <a href="bots.html">Bots</a>
     <a href="benchmarks.html" aria-current="page">Benchmarks</a>
-    <a href="https://github.com/next-gen-gems/browserx">GitHub</a>
+    <a href="https://github.com/levups/agentry">GitHub</a>
   </nav>
 
   <main id="content">
     <header>
       <h1 class="page-title">Benchmarks</h1>
-      <p class="lede">One benchmark, the shape of a web request, run against browser and BrowserX, with and without YJIT. The table below is rendered from <code>docs/benchmarks.json</code>, which the benchmark writes.</p>
+      <p class="lede">One benchmark, the shape of a web request, run against browser and Agentry, with and without YJIT. The table below is rendered from <code>docs/benchmarks.json</code>, which the benchmark writes.</p>
       <ul class="toc">
         <li><a href="#request">Per request</a></li>
         <li><a href="#why">Why it is faster</a></li>
@@ -44,9 +44,9 @@
     <section id="request" aria-labelledby="request-title">
       <h2 id="request-title">Per request</h2>
       <!-- render:benchmarks -->
-      <p class="note">Ruby 4.0.9, Apple M4 Max, measured on 2026-11-04: browser 6.2.0 at <code>dd88933</code>, BrowserX 1.0.0 at <code>e8bdc86</code>. Each figure is the median of 7 runs.</p>
+      <p class="note">Ruby 4.0.9, Apple M4 Max, measured on 2026-11-04: browser 6.2.0 at <code>dd88933</code>, Agentry 1.0.0 at <code>e8bdc86</code>. Each figure is the median of 7 runs.</p>
       <div class="table-scroll"><table class="options">
-      <thead><tr><th scope="col">User agents</th><th scope="col">JIT</th><th scope="col" class="number">browser 6.2.0 µs</th><th scope="col" class="number">BrowserX 1.0.0 µs</th><th scope="col" class="number">Faster</th><th scope="col" class="number">Objects</th></tr></thead>
+      <thead><tr><th scope="col">User agents</th><th scope="col">JIT</th><th scope="col" class="number">browser 6.2.0 µs</th><th scope="col" class="number">Agentry 1.0.0 µs</th><th scope="col" class="number">Faster</th><th scope="col" class="number">Objects</th></tr></thead>
       <tbody>
       <tr><td>2000 distinct user agents</td><td>YJIT</td><td class="number">125.84</td><td class="number">25.36</td><td class="number">5.0×</td><td class="number">245 → 52</td></tr>
       <tr><td>20 user agents, repeated</td><td>YJIT</td><td class="number">114.02</td><td class="number">2.01</td><td class="number">56.7×</td><td class="number">217 → 12</td></tr>
@@ -64,7 +64,7 @@
       <h2 id="why-title">Why it is faster</h2>
       <div class="prose">
         <p><strong>A cache per user agent.</strong> Every answer but Accept-Language depends on the user agent alone. Each process keeps, for the last 1,000 distinct user agents, the browser class <code>Browser.new</code> chose, the platform, the device and the bot answers, computed lazily; the last 1,000 Accept-Language headers are parsed once too. About 1 KB per user agent, so 1 MB per worker. <code>Browser.cache_size</code> changes the size, <code>0</code> turns it off, and changing a matcher list or the bot list empties it.</p>
-        <p><strong>Bots in one walk.</strong> browser matches the user agent against its bot list one entry at a time. BrowserX walks a byte trie of the list, five times longer since the weekly sync, once per user agent, and the built-in bot matchers no longer build a second <code>Browser</code> for the same user agent.</p>
+        <p><strong>Bots in one walk.</strong> browser matches the user agent against its bot list one entry at a time. Agentry walks a byte trie of the list, five times longer since the weekly sync, once per user agent, and the built-in bot matchers no longer build a second <code>Browser</code> for the same user agent.</p>
         <p><strong>Less work on a new user agent.</strong> <code>Browser.new</code> skips, unbuilt, a browser whose required pattern fails, and platform and device matchers are built only when a request asks for them.</p>
       </div>
     </section>
@@ -72,7 +72,7 @@
     <section id="reproduce" aria-labelledby="reproduce-title">
       <h2 id="reproduce-title">Reproduce</h2>
       <div class="prose">
-        <p>Run it without JIT and with <code>--yjit</code>, for upstream and for BrowserX, one at a time on an otherwise idle machine. <code>path/to/upstream</code> is a plain clone of <a href="https://github.com/fnando/browser">fnando/browser</a> at <code>dd88933</code>.</p>
+        <p>Run it without JIT and with <code>--yjit</code>, for upstream and for Agentry, one at a time on an otherwise idle machine. <code>path/to/upstream</code> is a plain clone of <a href="https://github.com/fnando/browser">fnando/browser</a> at <code>dd88933</code>.</p>
 <pre><code class="language-sh">ruby <span class="nt">--yjit</span> <span class="nt">-I</span> path/to/upstream/lib bench/request.rb
 ruby <span class="nt">--yjit</span> <span class="nt">-I</span> lib bench/request.rb</code></pre>
         <p><code>--write</code> records the run in <code>docs/benchmarks.json</code>, with the gem, its commit, the Ruby, YJIT, the machine and the date, replacing the previous run of that gem and JIT. <code>rake bench</code> runs all four and renders this page and the home page from the file:</p>
@@ -82,16 +82,16 @@ ruby <span class="nt">--yjit</span> <span class="nt">-I</span> lib bench/request
   </main>
 
   <footer class="family">
-    <p><a href="https://github.com/next-gen-gems">Next Gen Gems</a>, by Level UP Solutions</p>
-    <nav aria-label="Next Gen Gems">
+    <p>Gems by <a href="https://github.com/levups">Level UP Solutions</a></p>
+    <nav aria-label="Level UP Solutions gems">
       <ul>
-        <li><a href="https://next-gen-gems.github.io/slimx/">SlimX</a></li>
-        <li><a href="https://next-gen-gems.github.io/browserx/" aria-current="page">BrowserX</a></li>
-        <li><a href="https://next-gen-gems.github.io/prawnx/">PrawnX</a></li>
-        <li><a href="https://next-gen-gems.github.io/gretelx/">GretelX</a></li>
+        <li><a href="https://levups.github.io/super-slim/">SuperSlim</a></li>
+        <li><a href="https://levups.github.io/agentry/" aria-current="page">Agentry</a></li>
+        <li><a href="https://levups.github.io/gamba/">Gamba</a></li>
+        <li><a href="https://levups.github.io/crumbly/">Crumbly</a></li>
       </ul>
     </nav>
-    <p><a href="https://github.com/next-gen-gems/browserx">Source on GitHub</a></p>
+    <p><a href="https://github.com/levups/agentry">Source on GitHub</a></p>
     <p>MIT license, originally written by Nando Vieira as <a href="https://github.com/fnando/browser">browser</a></p>
   </footer>
 </div>

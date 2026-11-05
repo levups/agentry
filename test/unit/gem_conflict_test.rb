@@ -9,9 +9,9 @@ class GemConflictTest < Minitest::Test
     activate_browser_gem =
       'Gem.loaded_specs["browser"] = Gem::Specification.new("browser", "6.2.0")'
     _output, errors, status = Open3.capture3(RbConfig.ruby, "-I", lib_path,
-      "-e", activate_browser_gem, "-e", 'require "browserx"')
+      "-e", activate_browser_gem, "-e", 'require "agentry"')
 
     refute status.success?
-    assert_includes errors, "browserx replaces the browser gem"
+    assert_includes errors, "agentry replaces the browser gem"
   end
 end
