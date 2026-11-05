@@ -55,11 +55,11 @@ def machine
   cpu&.split(":", 2)&.last&.strip || RUBY_PLATFORM
 end
 
-# Measured from a checkout: lib/browserx.rb exists in BrowserX only.
+# Measured from a checkout: lib/agentry.rb exists in Agentry only.
 def measured_gem
   lib = File.dirname($LOAD_PATH.resolve_feature_path("browser").last)
   commit, status = Open3.capture2("git", "-C", lib, "rev-parse", "--short", "HEAD")
-  {"gem" => File.exist?(File.join(lib, "browserx.rb")) ? "BrowserX" : "browser",
+  {"gem" => File.exist?(File.join(lib, "agentry.rb")) ? "Agentry" : "browser",
    "version" => Browser::VERSION, "commit" => (commit.strip if status.success?)}
 end
 

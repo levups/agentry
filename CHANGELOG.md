@@ -28,7 +28,7 @@ except bot detection, which finds more bots.
 **Breaking**
 - `bot?` is true for about 600 more user agents: bots from crawler-user-agents and ai.robots.txt, synced weekly,
   add 1,247 entries to `bots.yml`. Of the crawlers added there since 2024, browser misses 353 out of 882 and
-  BrowserX 11. Analytics that filter on `bot?` will count fewer humans from the day you switch.
+  Agentry 11. Analytics that filter on `bot?` will count fewer humans from the day you switch.
 - The Rails helper and the middleware now pass the request's headers, so Client Hints refine the answers on
   Chromium: Windows 11 is no longer `windows10?`, and Chrome for Android in desktop mode is an Android tablet,
   not a Linux desktop.
@@ -53,12 +53,12 @@ except bot detection, which finds more bots.
   without. Objects per request: 9 instead of 116 repeated, 50 instead of 125 distinct.
 
 **Fixed**
-- Loading `browser` and `browserx` together raises a clear `LoadError` instead of one silently overriding the
+- Loading `browser` and `agentry` together raises a clear `LoadError` instead of one silently overriding the
   other.
 
 ## [1.0.0] — 2026-11-04
 
-First release as `browserx`, forked from browser 6.2.0 (`dd88933`). Same API: `gem "browserx"` replaces
+First release, forked from browser 6.2.0 (`dd88933`). Same API: `gem "agentry"` replaces
 `gem "browser"` without touching a call site. Earlier versions are browser's: see its
 [changelog](https://github.com/fnando/browser/blob/main/CHANGELOG.md).
 
@@ -73,13 +73,13 @@ First release as `browserx`, forked from browser 6.2.0 (`dd88933`). Same API: `g
 
 **Fixed**
 - The railtie loads Rails, not only itself, so it works without a preloaded ActiveSupport.
-- `lib/browserx.rb` exists, so Bundler's auto-require loads the gem.
+- `lib/agentry.rb` exists, so Bundler's auto-require loads the gem.
 
 **New**
 - A corpus of 20,328 user agents, with snapshot and diff scripts proving answers match upstream, and a
   request benchmark.
 
-[Unreleased]: https://github.com/next-gen-gems/browserx/compare/v2.1.0...HEAD
-[2.1.0]: https://github.com/next-gen-gems/browserx/compare/v2.0.0...v2.1.0
-[2.0.0]: https://github.com/next-gen-gems/browserx/compare/v1.0.0...v2.0.0
-[1.0.0]: https://github.com/next-gen-gems/browserx/releases/tag/v1.0.0
+[Unreleased]: https://github.com/levups/agentry/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/levups/agentry/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/levups/agentry/compare/v1.0.0...v2.0.0
+[1.0.0]: https://github.com/levups/agentry/releases/tag/v1.0.0

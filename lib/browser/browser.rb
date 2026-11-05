@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 if Gem.loaded_specs.key?("browser")
-  raise LoadError, "browserx replaces the browser gem, they can't be loaded together: " \
+  raise LoadError, "agentry replaces the browser gem, they can't be loaded together: " \
     "remove gem \"browser\" from the Gemfile (or whatever depends on it)"
 end
 

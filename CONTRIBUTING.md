@@ -1,11 +1,11 @@
 # Contributing
 
-Thank you for helping. BrowserX is maintained by Level UP Solutions, two developers who use it in production
+Thank you for helping. Agentry is maintained by Level UP Solutions, two developers who use it in production
 every day: small, focused pull requests get reviewed fastest.
 
 ## Before you start
 
-- **Bugs**: open an issue with the smallest input that reproduces it. BrowserX replaces browser: when the output
+- **Bugs**: open an issue with the smallest input that reproduces it. Agentry replaces browser: when the output
   differs from browser's, say so and show both.
 - **Features**: open an issue first, so we can agree on the scope before you write the code. Being a drop-in
   replacement comes first: a feature that changes what existing code renders or returns stays off by default.

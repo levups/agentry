@@ -3,11 +3,11 @@
 require_relative "lib/browser/version"
 
 Gem::Specification.new do |s|
-  s.name = "browserx"
+  s.name = "agentry"
   s.version = Browser::VERSION
   s.platform = Gem::Platform::RUBY
   s.authors = ["Nando Vieira", "Level UP Solutions"]
-  s.homepage = "https://github.com/next-gen-gems/browserx"
+  s.homepage = "https://github.com/levups/agentry"
   s.summary = "Browser detection for Ruby: the browser gem's API, faster"
   s.description = "A drop-in replacement for the browser gem: the same Browser API and require paths, " \
                   "answering nearly twice as fast with half the allocations."
@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.metadata["rubygems_mfa_required"] = "true"
   s.metadata["source_code_uri"] = s.homepage
   s.metadata["changelog_uri"] = "#{s.homepage}/blob/main/CHANGELOG.md"
-  s.metadata["documentation_uri"] = "https://next-gen-gems.github.io/browserx/"
+  s.metadata["documentation_uri"] = "https://levups.github.io/agentry/"
   s.metadata["bug_tracker_uri"] = "#{s.homepage}/issues"
 
   s.files = Dir["lib/**/*.rb", "data/*.json", "test/ua*.yml",

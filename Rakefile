@@ -41,10 +41,10 @@ namespace :docs do
   end
 end
 
-desc "Benchmark fnando/browser (UPSTREAM=path/to/upstream) and BrowserX into docs/benchmarks.json, then render it"
+desc "Benchmark fnando/browser (UPSTREAM=path/to/upstream) and Agentry into docs/benchmarks.json, then render it"
 task :bench do
   upstream_lib = File.join(ENV.fetch("UPSTREAM") { abort "UPSTREAM=path/to/a clone of fnando/browser at dd88933" }, "lib")
-  # Outside the bundle, or bundler/setup would put BrowserX's lib on upstream's load path.
+  # Outside the bundle, or bundler/setup would put Agentry's lib on upstream's load path.
   Bundler.with_unbundled_env do
     [["--yjit"], []].each do |jit|
       [upstream_lib, "lib"].each { |lib| ruby(*jit, "-I", lib, "bench/request.rb", "--write") }

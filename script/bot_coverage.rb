@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Counts, per category, the bots of tmp/bot_sources/ (written by
-# script/sync_bots.rb) that fnando/browser and BrowserX call bots, into
+# script/sync_bots.rb) that fnando/browser and Agentry call bots, into
 # docs/bot_coverage.json, and prints it as a Markdown table.
 #   ruby script/bot_coverage.rb path/to/upstream/lib
 require "json"
@@ -32,14 +32,14 @@ ai_entries.each { category_by_user_agent[format(AI_USER_AGENT_FORMAT, _1[:name])
 
 user_agents = category_by_user_agent.keys.sort
 upstream_bots = answers(ARGV.fetch(0), user_agents, "bot?")
-browserx_bots = answers(File.join(ROOT, "lib"), user_agents, "bot?")
-browserx_categories = answers(File.join(ROOT, "lib"), user_agents, "bot.category")
+agentry_bots = answers(File.join(ROOT, "lib"), user_agents, "bot?")
+agentry_categories = answers(File.join(ROOT, "lib"), user_agents, "bot.category")
 
 rows = user_agents.each_index.group_by { category_by_user_agent[user_agents[_1]] }.sort.map do |category, indexes|
   {"category" => category, "user_agents" => indexes.size,
    "upstream_bots" => indexes.count { upstream_bots[_1] },
-   "browserx_bots" => indexes.count { browserx_bots[_1] },
-   "browserx_categorized" => indexes.count { browserx_categories[_1] }}
+   "agentry_bots" => indexes.count { agentry_bots[_1] },
+   "agentry_categorized" => indexes.count { agentry_categories[_1] }}
 end
 total = rows.first.keys.drop(1).to_h { |column| [column, rows.sum { _1[column] }] }
 
@@ -50,20 +50,20 @@ recent_crawlers = {
   "added_since" => RECENT_SINCE.tr("/", "-"), "left_out_tags" => NOT_CRAWLER_TAGS,
   "user_agents" => recent_user_agents.size,
   "upstream_bots" => answers(ARGV.fetch(0), recent_user_agents, "bot?").count(true),
-  "browserx_bots" => answers(File.join(ROOT, "lib"), recent_user_agents, "bot?").count(true)
+  "agentry_bots" => answers(File.join(ROOT, "lib"), recent_user_agents, "bot?").count(true)
 }
 
 File.write(COVERAGE_PATH, JSON.pretty_generate({"upstream" => "fnando/browser dd88933",
   "sources" => SOURCE_URLS.values, "categories" => rows, "total" => total,
   "recent_crawlers" => recent_crawlers}) + "\n")
 
-puts "| Category | User agents | browser | BrowserX | With a category |"
+puts "| Category | User agents | browser | Agentry | With a category |"
 puts "|---|--:|--:|--:|--:|"
 (rows + [total.merge("category" => "**Total**")]).each do |row|
-  puts "| #{row["category"]} | #{row.values_at("user_agents", "upstream_bots", "browserx_bots", "browserx_categorized").join(" | ")} |"
+  puts "| #{row["category"]} | #{row.values_at("user_agents", "upstream_bots", "agentry_bots", "agentry_categorized").join(" | ")} |"
 end
 puts
 puts "Crawler user agents added since #{recent_crawlers["added_since"]}, tags #{NOT_CRAWLER_TAGS.join(" and ")} " \
   "left out: #{recent_crawlers["user_agents"]}, browser misses " \
-  "#{recent_crawlers["user_agents"] - recent_crawlers["upstream_bots"]}, BrowserX " \
-  "#{recent_crawlers["user_agents"] - recent_crawlers["browserx_bots"]}."
+  "#{recent_crawlers["user_agents"] - recent_crawlers["upstream_bots"]}, Agentry " \
+  "#{recent_crawlers["user_agents"] - recent_crawlers["agentry_bots"]}."

@@ -16,7 +16,7 @@ class DataTest < Minitest::Test
   end
 
   test "the gem ships the JSON, not the YAML it is written from" do
-    files = Dir.chdir(Browser.root) { Gem::Specification.load("browserx.gemspec").files }
+    files = Dir.chdir(Browser.root) { Gem::Specification.load("agentry.gemspec").files }
 
     SOURCES.each do |source|
       name = File.basename(source, ".yml")

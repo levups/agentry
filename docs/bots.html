@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BrowserX Bots</title>
-<meta name="description" content="How BrowserX detects bots and search engines, how to extend its lists, and the corpus of 20,328 user agents its answers are checked on.">
-<link rel="canonical" href="https://next-gen-gems.github.io/browserx/bots.html">
-<meta property="og:title" content="BrowserX Bots">
-<meta property="og:description" content="How BrowserX detects bots and search engines, how to extend its lists, and the corpus of 20,328 user agents its answers are checked on.">
+<title>Agentry Bots</title>
+<meta name="description" content="How Agentry detects bots and search engines, how to extend its lists, and the corpus of 20,328 user agents its answers are checked on.">
+<link rel="canonical" href="https://levups.github.io/agentry/bots.html">
+<meta property="og:title" content="Agentry Bots">
+<meta property="og:description" content="How Agentry detects bots and search engines, how to extend its lists, and the corpus of 20,328 user agents its answers are checked on.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://next-gen-gems.github.io/browserx/bots.html">
-<meta property="og:site_name" content="Next Gen Gems">
+<meta property="og:url" content="https://levups.github.io/agentry/bots.html">
+<meta property="og:site_name" content="Level UP Solutions">
 <meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#0b7a6f">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -23,11 +23,11 @@
 <a class="skip-link" href="#content">Skip to content</a>
 <div class="page">
   <nav class="site-nav" aria-label="Site">
-    <a class="brand" href="./">BrowserX</a>
+    <a class="brand" href="./">Agentry</a>
     <a href="guide.html">Guide</a>
     <a href="bots.html" aria-current="page">Bots</a>
     <a href="benchmarks.html">Benchmarks</a>
-    <a href="https://github.com/next-gen-gems/browserx">GitHub</a>
+    <a href="https://github.com/levups/agentry">GitHub</a>
   </nav>
 
   <main id="content">
@@ -56,7 +56,7 @@
       </div>
       <!-- /render:bot-lists -->
       <div class="prose">
-        <p class="more"><code>browser.bot.name</code> is the name from <code>bots.yml</code>, or <code>Generic Bot</code> when another matcher caught it. The lists are in the <a href="https://github.com/next-gen-gems/browserx/blob/main/bots.yml">repository</a>.</p>
+        <p class="more"><code>browser.bot.name</code> is the name from <code>bots.yml</code>, or <code>Generic Bot</code> when another matcher caught it. The lists are in the <a href="https://github.com/levups/agentry/blob/main/bots.yml">repository</a>.</p>
         <p>Every week, <code>script/sync_bots.rb</code> rewrites the part of <code>bots.yml</code> below its marker line, and <code>bot_categories.yml</code>, from crawler-user-agents and ai.robots.txt, and a pull request shows the answers that change. Above the marker, the list inherited from browser stays as it was.</p>
       </div>
     </section>
@@ -67,9 +67,9 @@
         <p>How many of the bots of crawler-user-agents and ai.robots.txt each gem calls a bot, per category: every user agent crawler-user-agents gives as an instance, and, for each name of ai.robots.txt, which gives none, the user agent an AI agent of 2026 sends. <code>script/bot_coverage.rb</code> counts them into <code>docs/bot_coverage.json</code> and the weekly sync regenerates it, with this table.</p>
       </div>
       <!-- render:coverage -->
-      <p class="note">Of the 882 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out), browser misses 353 and BrowserX 11. Against fnando/browser dd88933.</p>
+      <p class="note">Of the 882 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out), browser misses 353 and Agentry 11. Against fnando/browser dd88933.</p>
       <div class="table-scroll"><table class="options">
-      <thead><tr><th scope="col">Category</th><th scope="col" class="number">User agents</th><th scope="col" class="number">browser: <code>bot?</code></th><th scope="col" class="number">BrowserX: <code>bot?</code></th><th scope="col" class="number">BrowserX: a category</th></tr></thead>
+      <thead><tr><th scope="col">Category</th><th scope="col" class="number">User agents</th><th scope="col" class="number">browser: <code>bot?</code></th><th scope="col" class="number">Agentry: <code>bot?</code></th><th scope="col" class="number">Agentry: a category</th></tr></thead>
       <tbody>
       <tr><td><code>academic_research</code></td><td class="number">35</td><td class="number">24</td><td class="number">35</td><td class="number">34</td></tr>
       <tr><td><code>advertising_and_marketing</code></td><td class="number">97</td><td class="number">78</td><td class="number">94</td><td class="number">94</td></tr>
@@ -143,7 +143,7 @@
 <pre><code class="language-ruby"><span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">bots</span><span class="p">.</span><span class="nf">merge!</span><span class="p">(</span><span class="n">new_bots_hash</span><span class="p">)</span>
 <span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">bot_exceptions</span> <span class="o">+=</span> <span class="n">new_exceptions</span>
 <span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="p">.</span><span class="nf">search_engines</span><span class="p">.</span><span class="nf">merge!</span><span class="p">(</span><span class="n">new_search_engines_hash</span><span class="p">)</span></code></pre>
-        <p>The prefix tries behind each list are rebuilt when the list grows or is replaced. <code>Browser::Bot.category_by_keyword</code> takes new categories the same way. To add a bot to BrowserX itself, add its user agent to <code>test/ua_bots.yml</code> and its name to <code>bots.yml</code>; a search engine also goes in <code>test/ua_search_engines.yml</code> and <code>search_engines.yml</code>.</p>
+        <p>The prefix tries behind each list are rebuilt when the list grows or is replaced. <code>Browser::Bot.category_by_keyword</code> takes new categories the same way. To add a bot to Agentry itself, add its user agent to <code>test/ua_bots.yml</code> and its name to <code>bots.yml</code>; a search engine also goes in <code>test/ua_search_engines.yml</code> and <code>search_engines.yml</code>.</p>
         <p><strong>A trap.</strong> Public crawler lists call “bot” anything that is not a human browser: crawlers, but also test drivers (Playwright, Puppeteer, Selenium), scripts and scanners. Adding them all to <code>bot?</code> would flag the system tests of the apps using it, so test drivers get a category of their own and no <code>bot?</code>.</p>
       </div>
     </section>
@@ -153,8 +153,8 @@
       <div class="prose">
         <p><code>corpus/user_agents.txt</code> holds 20,328 distinct user agents. A change that is not meant to change an answer proves it there: one script writes every answer of a gem as JSON lines, another diffs two snapshots.</p>
 <pre><code class="language-sh">ruby <span class="nt">-I</span> path/to/upstream/lib script/corpus_snapshot.rb <span class="o">&gt;</span> /tmp/upstream.jsonl
-ruby <span class="nt">-I</span> lib script/corpus_snapshot.rb <span class="o">&gt;</span> /tmp/browserx.jsonl
-ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/browserx.jsonl</code></pre>
+ruby <span class="nt">-I</span> lib script/corpus_snapshot.rb <span class="o">&gt;</span> /tmp/agentry.jsonl
+ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/agentry.jsonl</code></pre>
         <p><code>path/to/upstream</code> is a plain clone of <a href="https://github.com/fnando/browser">fnando/browser</a> at <code>dd88933</code>. A change meant to change answers, like a fresher bot list, lists the differences it expects in <code>corpus/expected_differences.jsonl</code> (<code>corpus_diff.rb --write</code>), and the diff must show exactly those. No browser of uap-core turns into a bot: the sync leaves out any keyword that would flag one.</p>
       </div>
     </section>
@@ -168,22 +168,22 @@ ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/browserx.jsonl</code></pre>
           <li>the <code>instances</code> of <a href="https://github.com/monperrus/crawler-user-agents">monperrus/crawler-user-agents</a>, MIT;</li>
           <li>the test fixtures of <a href="https://github.com/fnando/browser">fnando/browser</a>, MIT.</li>
         </ul>
-        <p>The bot list and its categories are synced from permissively licensed sources only: <a href="https://github.com/monperrus/crawler-user-agents">crawler-user-agents</a> and <a href="https://github.com/ai-robots-txt/ai.robots.txt">ai.robots.txt</a>, both MIT. <code>script/bot_coverage.rb</code> counts, per category, the bots of both lists that browser and BrowserX detect, into <code>docs/bot_coverage.json</code>. Details in <a href="https://github.com/next-gen-gems/browserx/blob/main/corpus/SOURCES.md"><code>corpus/SOURCES.md</code></a>.</p>
+        <p>The bot list and its categories are synced from permissively licensed sources only: <a href="https://github.com/monperrus/crawler-user-agents">crawler-user-agents</a> and <a href="https://github.com/ai-robots-txt/ai.robots.txt">ai.robots.txt</a>, both MIT. <code>script/bot_coverage.rb</code> counts, per category, the bots of both lists that browser and Agentry detect, into <code>docs/bot_coverage.json</code>. Details in <a href="https://github.com/levups/agentry/blob/main/corpus/SOURCES.md"><code>corpus/SOURCES.md</code></a>.</p>
       </div>
     </section>
   </main>
 
   <footer class="family">
-    <p><a href="https://github.com/next-gen-gems">Next Gen Gems</a>, by Level UP Solutions</p>
-    <nav aria-label="Next Gen Gems">
+    <p>Gems by <a href="https://github.com/levups">Level UP Solutions</a></p>
+    <nav aria-label="Level UP Solutions gems">
       <ul>
-        <li><a href="https://next-gen-gems.github.io/slimx/">SlimX</a></li>
-        <li><a href="https://next-gen-gems.github.io/browserx/" aria-current="page">BrowserX</a></li>
-        <li><a href="https://next-gen-gems.github.io/prawnx/">PrawnX</a></li>
-        <li><a href="https://next-gen-gems.github.io/gretelx/">GretelX</a></li>
+        <li><a href="https://levups.github.io/super-slim/">SuperSlim</a></li>
+        <li><a href="https://levups.github.io/agentry/" aria-current="page">Agentry</a></li>
+        <li><a href="https://levups.github.io/gamba/">Gamba</a></li>
+        <li><a href="https://levups.github.io/crumbly/">Crumbly</a></li>
       </ul>
     </nav>
-    <p><a href="https://github.com/next-gen-gems/browserx">Source on GitHub</a></p>
+    <p><a href="https://github.com/levups/agentry">Source on GitHub</a></p>
     <p>MIT license, originally written by Nando Vieira as <a href="https://github.com/fnando/browser">browser</a></p>
   </footer>
 </div>

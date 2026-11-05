@@ -192,7 +192,7 @@ def curated_section
 end
 
 # A keyword that would turn into a bot a browser of the corpus (a user agent
-# BrowserX knows, which no crawler-user-agents pattern matches) is left out.
+# Agentry knows, which no crawler-user-agents pattern matches) is left out.
 def browser_user_agents(curated_bots)
   $LOAD_PATH.unshift(File.join(ROOT, "lib"))
   require "browser"

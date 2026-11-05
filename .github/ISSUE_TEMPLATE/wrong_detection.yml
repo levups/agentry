@@ -1,5 +1,5 @@
 name: Wrong detection
-description: A browser, platform, device or bot BrowserX names wrongly, or misses
+description: A browser, platform, device or bot Agentry names wrongly, or misses
 labels: [bug]
 body:
   - type: textarea
@@ -14,7 +14,7 @@ body:
     id: expected
     attributes:
       label: Expected and actual result
-      description: What BrowserX answers (`name`, `version`, `platform`, `device`, `bot?`…) and what it should answer. Say whether the browser gem answers the same.
+      description: What Agentry answers (`name`, `version`, `platform`, `device`, `bot?`…) and what it should answer. Say whether the browser gem answers the same.
     validations:
       required: true
   - type: input
@@ -26,6 +26,6 @@ body:
     id: versions
     attributes:
       label: Versions
-      placeholder: BrowserX 1.0.0 (or commit), Ruby 4.0.1, Rails 8.1
+      placeholder: Agentry 1.0.0 (or commit), Ruby 4.0.1, Rails 8.1
     validations:
       required: true

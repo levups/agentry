@@ -4,8 +4,8 @@
 # answer that differs is listed in corpus/expected_differences.jsonl, and
 # every listed one differs: a fresher bot list changes answers on purpose.
 # A method the first snapshot lacks is an addition, not a changed answer.
-#   ruby script/corpus_diff.rb upstream.jsonl browserx.jsonl
-#   ruby script/corpus_diff.rb --write upstream.jsonl browserx.jsonl # lists them
+#   ruby script/corpus_diff.rb upstream.jsonl agentry.jsonl
+#   ruby script/corpus_diff.rb --write upstream.jsonl agentry.jsonl # lists them
 require "json"
 
 EXPECTED_DIFFERENCES_PATH = File.expand_path("../corpus/expected_differences.jsonl", __dir__)

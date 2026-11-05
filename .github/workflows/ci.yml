@@ -1,6 +1,6 @@
 name: CI
 
-# The blocks shared by the gems of next-gen-gems are kept identical across the family.
+# The blocks shared by the Level UP Solutions gems are kept identical across the family.
 
 on:
   push:
@@ -115,10 +115,10 @@ jobs:
           ruby-version: "4.0"
       - name: Snapshot fnando/browser
         run: ruby -I upstream/lib script/corpus_snapshot.rb > "$RUNNER_TEMP/upstream.jsonl"
-      - name: Snapshot BrowserX
-        run: ruby -I lib script/corpus_snapshot.rb > "$RUNNER_TEMP/browserx.jsonl"
+      - name: Snapshot Agentry
+        run: ruby -I lib script/corpus_snapshot.rb > "$RUNNER_TEMP/agentry.jsonl"
       - name: Compare the answers
-        run: ruby script/corpus_diff.rb "$RUNNER_TEMP/upstream.jsonl" "$RUNNER_TEMP/browserx.jsonl"
+        run: ruby script/corpus_diff.rb "$RUNNER_TEMP/upstream.jsonl" "$RUNNER_TEMP/agentry.jsonl"
 
   # The one check main's ruleset requires, so the Rubies, Rails and jobs above can change without touching it.
   # Every other job belongs in needs: bin/x-gems-ci-check in levups/oss checks it.

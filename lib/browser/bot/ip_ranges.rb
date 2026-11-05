@@ -131,7 +131,7 @@ module Browser
         (MAX_REDIRECTS + 1).times do
           response = Net::HTTP.start(uri.host, uri.port, use_ssl: true,
             open_timeout: FETCH_TIMEOUT_SECONDS, read_timeout: FETCH_TIMEOUT_SECONDS) do |http|
-            http.get(uri.request_uri, "User-Agent" => "BrowserX/#{VERSION} (+https://github.com/next-gen-gems/browserx)")
+            http.get(uri.request_uri, "User-Agent" => "Agentry/#{VERSION} (+https://github.com/levups/agentry)")
           end
           break unless response.is_a?(Net::HTTPRedirection)
 
