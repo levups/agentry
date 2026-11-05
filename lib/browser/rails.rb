@@ -7,6 +7,7 @@ require_relative "middleware/context/additions"
 module Browser
   class Railtie < Rails::Railtie
     config.browser = ActiveSupport::OrderedOptions.new
+    config.eager_load_namespaces << Browser
 
     initializer "browser" do
       ActiveSupport.on_load(:action_controller) do
