@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-11-05
+
+The first request of each process gets cheaper: the lists ship as JSON, and `Browser.eager_load!` builds them
+before a server forks.
+
+**New**
+- `Browser.eager_load!` loads the lists and builds the matchers and bot keyword tries up front, so a server that
+  preloads its app before forking (Puma, Unicorn, Pitchfork) shares them with every worker. Rails calls it on its
+  own when it eager loads, which production does by default. A worker's first request spent 12.9 ms building
+  them, 0.2 ms once built.
+
+**Faster**
+- The lists ship as JSON: without Bootsnap's cache, a process's first request is 3× faster (12.4 → 4.0 ms with
+  YJIT, 7.5 → 2.7 ms without), and `require "browser"` no longer loads Psych (32 → 21 ms with YJIT, 28 → 22 ms
+  without). With Bootsnap, nothing changes. Code that used `YAML` without requiring it now needs its own
+  `require "yaml"`.
+
 ## [2.0.0] — 2026-11-04
 
 A repeated user agent is now answered in 2 µs, about 600 more bots are recognised, and bots, Cloudflare headers and
@@ -62,6 +79,7 @@ First release as `browserx`, forked from browser 6.2.0 (`dd88933`). Same API: `g
 - A corpus of 20,328 user agents, with snapshot and diff scripts proving answers match upstream, and a
   request benchmark.
 
-[Unreleased]: https://github.com/next-gen-gems/browserx/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/next-gen-gems/browserx/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/next-gen-gems/browserx/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/next-gen-gems/browserx/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/next-gen-gems/browserx/releases/tag/v1.0.0
