@@ -52,7 +52,9 @@ module Browser
       FETCH_TIMEOUT_SECONDS = 10
       # Owners move their files: Google's old URLs redirect to the new ones.
       MAX_REDIRECTS = 3
-      DNS_TIMEOUT_SECONDS = 2
+      # How long each DNS query waits for each nameserver of /etc/resolv.conf: a resolver answers in milliseconds,
+      # and only a stalled one (or an attacker's own reverse zone) ever waits that long.
+      DNS_TIMEOUT_SECONDS = 1
       # The broadest prefix a source may publish: a wider one, or one outside the public unicast space, is a broken
       # or compromised source, never a crawler's range.
       MIN_PREFIX_LENGTH_BY_FAMILY = {Socket::AF_INET => 12, Socket::AF_INET6 => 24}.freeze
@@ -79,19 +81,80 @@ module Browser
         index >= 0 && number <= ends[index]
       end
 
+      @dns_mutex = Mutex.new
+      @dns_verdicts = {}
+
+      class << self
+        attr_reader :dns_timeout, :dns_cache_size, :dns_cache_ttl
+      end
+
+      def self.positive?(seconds)
+        seconds.is_a?(Numeric) && seconds.positive?
+      end
+
+      # Seconds each DNS query waits for each nameserver.
+      def self.dns_timeout=(seconds)
+        raise ArgumentError, "dns_timeout must be a positive number, got #{seconds.inspect}" unless positive?(seconds)
+
+        @dns_timeout = seconds
+      end
+
+      # How many reverse DNS verdicts to remember, the oldest dropped first: 0, the default, remembers none. A forged
+      # Googlebot then costs its DNS queries once per IP and TTL, not on every request.
+      def self.dns_cache_size=(size)
+        unless size.is_a?(Integer) && size >= 0
+          raise ArgumentError, "dns_cache_size must be an Integer >= 0, got #{size.inspect}"
+        end
+
+        @dns_cache_size = size
+        clear_dns_cache
+      end
+
+      # Seconds a verdict holds, a failed lookup's as long as any other's.
+      def self.dns_cache_ttl=(seconds)
+        raise ArgumentError, "dns_cache_ttl must be a positive number, got #{seconds.inspect}" unless positive?(seconds)
+
+        @dns_cache_ttl = seconds
+      end
+
+      def self.clear_dns_cache
+        @dns_mutex.synchronize { @dns_verdicts.clear }
+      end
+
+      self.dns_timeout = DNS_TIMEOUT_SECONDS
+      self.dns_cache_size = 0
+      self.dns_cache_ttl = 3600
+
       # Google's documented method: the reverse lookup names one of the owner's
-      # domains, and that name resolves back to the IP. Two DNS queries.
+      # domains, and that name resolves back to the IP. Two DNS queries, or
+      # none when dns_cache_size holds a fresh verdict for the IP.
       def self.verified_by_dns?(owner, ip)
         address = parse(ip)
         domains = SOURCES.dig(owner, :domains)
         return false unless address && domains&.any?
+        return resolves_to?(address, domains) if dns_cache_size.zero?
 
+        key = "#{owner} #{address}"
+        now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        verdict, expires_at = @dns_mutex.synchronize { @dns_verdicts[key] }
+        return verdict if expires_at && now < expires_at
+
+        verdict = resolves_to?(address, domains)
+        @dns_mutex.synchronize do
+          @dns_verdicts.delete(key)
+          @dns_verdicts.shift while @dns_verdicts.size >= dns_cache_size
+          @dns_verdicts[key] = [verdict, now + dns_cache_ttl]
+        end
+        verdict
+      end
+
+      def self.resolves_to?(address, domains)
         require "resolv"
         Resolv::DNS.open do |dns|
-          dns.timeouts = DNS_TIMEOUT_SECONDS
+          dns.timeouts = dns_timeout
           host = dns.getname(address.to_s).to_s.downcase
           domains.any? { |domain| host == domain || host.end_with?(".#{domain}") } &&
-            dns.getaddresses(host).any? { |resolved| IPAddr.new(resolved.to_s) == address }
+            dns.getaddresses(Resolv::DNS::Name.create("#{host}.")).any? { |resolved| IPAddr.new(resolved.to_s) == address }
         end
       rescue Resolv::ResolvError, Resolv::ResolvTimeout, SystemCallError
         false
@@ -215,7 +278,7 @@ module Browser
         nil
       end
 
-      private_class_method :fetch_prefixes, :plausible?, :build_ranges, :merge, :parse
+      private_class_method :resolves_to?, :positive?, :fetch_prefixes, :plausible?, :build_ranges, :merge, :parse
     end
   end
 end
