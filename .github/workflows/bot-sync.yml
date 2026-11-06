@@ -8,27 +8,36 @@ on:
     - cron: "17 4 * * 1"
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pull-requests: write
-  actions: write
+permissions: {}
+
+# Two syncs at once would push the same bot-sync branch.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   sync:
     name: Sync the bot lists
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write # the bot-sync branch
+      pull-requests: write # its pull request
+      actions: write # the CI dispatched on it
     steps:
       - name: Check out
-        uses: actions/checkout@v7
-      - name: Check out fnando/browser at dd88933
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
+      - name: Check out fnando/browser at dd88933
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
           repository: fnando/browser
           ref: dd8893395248594ca0e4b6a3fbd221f36989b15b
           path: upstream
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
         with:
           ruby-version: "4.0"
           bundler-cache: true
@@ -82,7 +91,7 @@ jobs:
           } > "$RUNNER_TEMP/body.md"
       - name: Open the pull request
         id: pull-request
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           branch: bot-sync
           delete-branch: true
