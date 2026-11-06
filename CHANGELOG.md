@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [3.1.0] — 2026-11-06
+
+A Google Cloud VM no longer passes as a verified Googlebot, and a forged Googlebot can no longer stall requests on reverse DNS.
+
+**New**
+- `Browser::Bot::IPRanges.dns_cache_size` caches each reverse DNS verdict per owner and IP, failures included, for `dns_cache_ttl` seconds (3,600 by default), so a forged Googlebot pays its DNS wait once per TTL instead of on every request. It is 0, off, by default.
+- `dns_timeout` sets the timeout per query and per nameserver, as `Resolv` applies it. Invalid values raise `ArgumentError`.
+
+**Fixed**
+- Google's reverse DNS check accepts only `googlebot.com` and `google.com`. Any Google Cloud VM, named under `googleusercontent.com`, passed as a verified Googlebot; Google's user-triggered fetchers are covered by the IP ranges it publishes.
+- The DNS timeout drops from 2 seconds to 1, and the forward lookup uses an absolute name, so the resolver never retries it under the search domains of `/etc/resolv.conf`.
+- `IPRanges.refresh` and the weekly sync raise `Browser::Error` on anything implausible, and keep the current ranges: a prefix broader than /12 (IPv4) or /24 (IPv6), a private, loopback, link-local, multicast or unspecified range, a malformed document, or a redirect that leaves HTTPS or the owner's host.
+- Cloudflare header values over 128 bytes are ignored.
+
 ## [3.0.0] — 2026-11-05
 
 The gem is renamed Agentry and lives at levups/agentry; the API is untouched.
@@ -86,7 +100,8 @@ First release, forked from browser 6.2.0 (`dd88933`). Same API: `gem "agentry"` 
 - A corpus of 20,328 user agents, with snapshot and diff scripts proving answers match upstream, and a
   request benchmark.
 
-[Unreleased]: https://github.com/levups/agentry/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/levups/agentry/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/levups/agentry/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/levups/agentry/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/levups/agentry/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/levups/agentry/compare/v1.0.0...v2.0.0
