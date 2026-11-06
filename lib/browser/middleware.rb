@@ -60,7 +60,7 @@ module Browser
     end
 
     def html?(request)
-      request.env["HTTP_ACCEPT"].to_s.match(ACCEPT_REGEX)
+      request.env["HTTP_ACCEPT"].to_s.scrub.match(ACCEPT_REGEX)
     end
 
     def assets?(request)

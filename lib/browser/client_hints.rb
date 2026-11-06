@@ -4,7 +4,7 @@ module Browser
   # The User-Agent Client Hints of Chromium browsers, read from a Rack env.
   # Safari and Firefox send none: every answer is then nil.
   class ClientHints
-    # A browser's hints are a few dozen bytes: longer values are ignored.
+    # A browser's hints are a few dozen bytes: longer values, and invalid UTF-8, are ignored.
     HEADER_SIZE_LIMIT_BYTES = 512
     PLATFORM_CLASS_BY_NAME = {
       "Android" => Platform::Android,
@@ -54,7 +54,7 @@ module Browser
 
     private def header(headers, name)
       value = headers[name]
-      value if value.is_a?(String) && value.bytesize <= HEADER_SIZE_LIMIT_BYTES
+      value if value.is_a?(String) && value.bytesize <= HEADER_SIZE_LIMIT_BYTES && value.valid_encoding?
     end
 
     private def parse_brands(value)

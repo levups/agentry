@@ -55,6 +55,17 @@ class ClientHintsTest < Minitest::Test
     assert_nil Browser.new(WINDOWS_CHROME).client_hints.platform
   end
 
+  test "ignores a hint that is not valid UTF-8" do
+    invalid = hints(platform: "Windows\xFF", platform_version: "19.0.0\xFF", brands: "#{BRANDS}\xFF")
+      .transform_values { |value| value.dup.force_encoding(Encoding::UTF_8) }
+    client_hints = Browser::ClientHints.new(invalid)
+
+    assert_empty client_hints.version_by_brand
+    assert_nil client_hints.platform
+    assert_nil client_hints.platform_version
+    refute Browser.new(WINDOWS_CHROME, headers: invalid).platform.windows11?
+  end
+
   test "tells Windows 11 from Windows 10" do
     windows11 = Browser.new(WINDOWS_CHROME, headers: hints(platform: "Windows", platform_version: "19.0.0")).platform
     windows10 = Browser.new(WINDOWS_CHROME, headers: hints(platform: "Windows", platform_version: "10.0.0")).platform

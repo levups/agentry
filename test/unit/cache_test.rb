@@ -185,6 +185,18 @@ class CacheTest < Minitest::Test
       Browser.new("", accept_language: "fr-FR,en;q=0.8").accept_language.first
   end
 
+  test "does not cache an accept language listing more languages than a browser sends" do
+    header = Array.new(Browser::Cache::MAX_LANGUAGES_PER_CACHED_HEADER + 1) { |index| "x#{index}" }.join(",")
+    Browser::Cache.clear
+
+    languages = Browser.new("", accept_language: header).accept_language
+
+    assert_equal %w[x0 x1], languages.first(2).map(&:full)
+    assert_empty Browser::Cache.instance_variable_get(:@languages_by_header)
+    Browser.new("", accept_language: header.sub(/,x\d+\z/, "")).accept_language
+    assert_equal 1, Browser::Cache.instance_variable_get(:@languages_by_header).size
+  end
+
   test "gives the same answers from concurrent threads" do
     user_agents = Browser.user_agents.values
     answers = ->(browser) do

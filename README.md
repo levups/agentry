@@ -158,6 +158,11 @@ Browser::Bot::IPRanges.dns_timeout = 0.5       # seconds per query and nameserve
 Browser::Bot::IPRanges.refresh                 # fetches the ranges again, in a long-lived process
 ```
 
+The reverse lookup reads answers from a name server the requester chooses, and versions of the `resolv` gem before
+0.7.2 (0.3.2 in the 0.3 series) can be made to use up memory or CPU by such answers (CVE-2026-80212,
+CVE-2025-24294). Before turning `reverse_dns:` on, check `bundle info resolv`, or add `gem "resolv", ">= 0.7.2"`
+to your Gemfile.
+
 ## Cloudflare and Client Hints
 
 When the Rack env is passed as `headers:` (the Rails helper and the middleware do it for you), Agentry reads two
@@ -229,7 +234,14 @@ Browser.cache_size = 5_000 # 0 turns it off
 ```
 
 A user agent or an `Accept-Language` header longer than 2048 bytes raises `Browser::Error`. Both limits can be
-raised with `Browser.user_agent_size_limit = 4096` and `Browser.accept_language_size_limit = 4096`.
+raised with `Browser.user_agent_size_limit = 4096` and `Browser.accept_language_size_limit = 4096`. An
+`Accept-Language` header listing more than 32 languages is parsed on each request instead of cached, so that
+crafted headers cannot fill the cache with thousands of languages each.
+
+Headers whose bytes are not valid UTF-8, forged or read back from a log file, do not raise: Agentry reads the user
+agent and the `Accept-Language` header with each invalid byte replaced by U+FFFD, and ignores such a Client Hint or
+Cloudflare header. Version checks such as `browser.chrome?(">= 65")` leave the versions they read from a request
+out of RubyGems' version cache, where those an attacker sends would pile up for the life of the process.
 
 The lists and matchers are built on first use: the first request of each process takes about 13 ms more, the
 following ones 0.2 ms. `Browser.eager_load!` builds them at boot, so that a server that loads the app before

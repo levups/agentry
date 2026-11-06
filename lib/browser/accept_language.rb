@@ -9,6 +9,7 @@ module Browser
     def self.parse(accept_language)
       return [] unless accept_language
 
+      accept_language = accept_language.scrub unless accept_language.valid_encoding?
       languages = accept_language.split(",")
       languages.map! { |string| new(string.squeeze(" ").strip) }
       languages.reject! { |al| al.quality.zero? }

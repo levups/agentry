@@ -179,6 +179,10 @@ module Browser
 
   def self.new(user_agent, **)
     user_agent ||= EMPTY_STRING
+    # Before the first regexp: an oversized user agent then costs nothing, and
+    # a byte that is not UTF-8 (forged, or read from a log) would make it raise.
+    Base.validate_size(:user_agent, user_agent.to_s)
+    user_agent = user_agent.scrub unless user_agent.valid_encoding?
     browser_class = Cache.cached_detection(user_agent)&.browser_class
     return browser_class.new(user_agent, **) if browser_class
 

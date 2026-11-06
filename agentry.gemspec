@@ -8,9 +8,10 @@ Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.authors = ["Nando Vieira", "Level UP Solutions"]
   s.homepage = "https://github.com/levups/agentry"
-  s.summary = "Browser detection for Ruby: the browser gem's API, faster"
-  s.description = "A drop-in replacement for the browser gem: the same Browser API and require paths, " \
-                  "answering nearly twice as fast with half the allocations."
+  s.summary = "Detects the browser, platform, device and bot behind a User-Agent header"
+  s.description = "Agentry replaces the browser gem without changing a call site, with the same Browser class, " \
+                  "methods and require paths. It is faster, updates its bot list every week, names the category " \
+                  "of each bot and checks the IP addresses of known crawlers."
   s.license = "MIT"
   s.required_ruby_version = ">= 3.3"
 
