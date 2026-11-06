@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agentry — the browser gem's API, faster</title>
-<meta name="description" content="Browser detection for Ruby: the browser gem's API, faster, with a bot list synced every week. Swap one line of the Gemfile, keep every call site.">
-<meta property="og:title" content="Agentry — the browser gem's API, faster">
-<meta property="og:description" content="A drop-in replacement for fnando/browser: same Browser namespace, same predicates, faster, and a bot list that stays fresh.">
+<title>Agentry: browser and bot detection for Ruby</title>
+<meta name="description" content="Agentry is a Ruby gem that reads the User-Agent header of a request and tells you the browser, the operating system, the device or the bot behind it. A faster fork of the browser gem, with the same API and a bot list synced every week.">
+<meta property="og:title" content="Agentry: browser and bot detection for Ruby">
+<meta property="og:description" content="A Ruby gem that tells you which browser, device or bot sent a request. A faster fork of fnando/browser, with the same API and a bot list synced every week.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://levups.github.io/agentry/">
 <meta property="og:url" content="https://levups.github.io/agentry/">
 <meta property="og:site_name" content="Level UP Solutions">
 <meta name="twitter:card" content="summary">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareSourceCode","name":"Agentry","description":"Browser detection for Ruby: the browser gem's API, faster","url":"https://levups.github.io/agentry/","codeRepository":"https://github.com/levups/agentry","programmingLanguage":"Ruby","runtimePlatform":"Ruby 3.3 or later","license":"https://spdx.org/licenses/MIT.html","author":{"@type":"Organization","name":"Level UP Solutions","url":"https://levups.com"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareSourceCode","name":"Agentry","description":"Browser and bot detection for Ruby: the browser gem's API, faster","url":"https://levups.github.io/agentry/","codeRepository":"https://github.com/levups/agentry","programmingLanguage":"Ruby","runtimePlatform":"Ruby 3.3 or later","license":"https://spdx.org/licenses/MIT.html","author":{"@type":"Organization","name":"Level UP Solutions","url":"https://levups.com"}}</script>
 <meta name="theme-color" content="#0b7a6f">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,15 +34,44 @@
   <main id="content">
     <header class="hero">
       <h1 class="wordmark">Agentry</h1>
-      <p class="byline"><span>Same API as browser, faster,</span><span class="byline-sub">and a bot list that stays fresh.</span></p>
+      <p class="byline"><span>Who sent this request?</span><span class="byline-sub">A browser, a phone, a crawler or an AI agent.</span></p>
       <div>
+        <p class="summary">Agentry is a Ruby gem that reads the <code>User-Agent</code> header, the line of text every browser and crawler sends with a request, and tells you the browser, the operating system, the device or the bot behind it. It is a fork of the browser gem: the same API, faster, with a bot list updated every week.</p>
         <!-- render:lede -->
         <p class="summary">25 µs per request instead of 126 µs with browser, 2.0 µs once a user agent was seen (YJIT). Of the 882 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out), browser misses 353 and Agentry 11.</p>
         <!-- /render:lede -->
         <code class="install">gem "agentry"</code>
-        <p class="links"><a href="guide.html#migrating">Migrating from browser</a><a href="guide.html">Guide</a><a href="bots.html#coverage">Bot coverage</a></p>
+        <p class="links"><a href="guide.html">Guide</a><a href="guide.html#migrating">Coming from browser</a><a href="bots.html">Bots</a></p>
       </div>
     </header>
+
+    <section aria-labelledby="start-title">
+      <h2 id="start-title">Quick start</h2>
+      <div class="split">
+        <div>
+          <p class="code-label">Gemfile</p>
+<pre><code class="language-ruby"><span class="n">gem</span> <span class="s2">"agentry"</span> <span class="c1"># Ruby 3.3 or later</span></code></pre>
+          <p class="code-label">Rails view</p>
+<pre><code class="language-erb"><span class="cp">&lt;%</span> <span class="k">if</span> <span class="n">browser</span><span class="p">.</span><span class="nf">bot?</span> <span class="cp">%&gt;</span>
+  <span class="nt">&lt;p&gt;</span>Hello, <span class="cp">&lt;%=</span> <span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">name</span> <span class="cp">%&gt;</span>.<span class="nt">&lt;/p&gt;</span>
+<span class="cp">&lt;%</span> <span class="k">end</span> <span class="cp">%&gt;</span></code></pre>
+        </div>
+        <div>
+          <p class="code-label">Ruby</p>
+<pre><code class="language-ruby"><span class="nb">require</span> <span class="s2">"browser"</span>
+
+<span class="n">browser</span> <span class="o">=</span> <span class="no">Browser</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">iphone_user_agent</span><span class="p">)</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">name</span>           <span class="c1"># =&gt; "Safari"</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">platform</span><span class="p">.</span><span class="nf">name</span>  <span class="c1"># =&gt; "iOS (iPhone)"</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">mobile?</span> <span class="c1"># =&gt; true</span>
+
+<span class="n">browser</span> <span class="o">=</span> <span class="no">Browser</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">gptbot_user_agent</span><span class="p">)</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">bot?</span>           <span class="c1"># =&gt; true</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">name</span>       <span class="c1"># =&gt; "ChatGPT"</span>
+<span class="n">browser</span><span class="p">.</span><span class="nf">bot</span><span class="p">.</span><span class="nf">category</span>   <span class="c1"># =&gt; :ai_crawler</span></code></pre>
+        </div>
+      </div>
+    </section>
 
     <section aria-labelledby="numbers-title">
       <h2 id="numbers-title">In numbers</h2>
@@ -58,17 +87,12 @@
     </section>
 
     <section aria-labelledby="changes-title">
-      <h2 id="changes-title">What changes</h2>
+      <h2 id="changes-title">Why Agentry</h2>
       <div class="cards">
         <div class="card">
-          <h3>Nothing in your code</h3>
-          <p>Every predicate, every <code>require</code> path and the <code>Browser</code> namespace of browser keep working unchanged. The upstream test suite runs unmodified.</p>
+          <h3>The browser gem, unchanged</h3>
+          <p>Code written for browser runs as it is: every predicate, every <code>require</code> path and the <code>Browser</code> namespace keep working, and browser’s own test suite runs unmodified. Switching is one line of the Gemfile.</p>
           <p><a href="guide.html#migrating">Migrating</a></p>
-        </div>
-        <div class="card">
-          <h3>Detected once per user agent</h3>
-          <p>Each process caches what it detected for the last 1,000 user agents, so a returning visitor costs a hash lookup. <code>Browser.cache_size</code> sizes it.</p>
-          <p><a href="benchmarks.html#why">Why it is faster</a></p>
         </div>
         <div class="card">
           <h3>A bot list that stays fresh</h3>
@@ -77,8 +101,13 @@
         </div>
         <div class="card">
           <h3>Bots by category</h3>
-          <p><code>bot.category</code> tells an AI crawler from a search engine or a scanner, <code>bot.ai?</code> and <code>bot.user_triggered?</code> an agent acting for a person. Test drivers never become bots.</p>
+          <p><code>bot.category</code> tells an AI crawler from a search engine or a scanner, <code>bot.ai?</code> and <code>bot.user_triggered?</code> an agent acting for a person. Test drivers never become bots, so your system tests don’t either.</p>
           <p><a href="bots.html#categories">Categories</a></p>
+        </div>
+        <div class="card">
+          <h3>Real Googlebot or not</h3>
+          <p>Anyone can send <code>Googlebot</code>. <code>bot.verified?(ip)</code> checks the IP against the ranges Google, Bing, OpenAI, Apple, Perplexity and DuckDuckGo publish, in memory. Behind Cloudflare, <code>browser.cloudflare</code> reads what Cloudflare verified.</p>
+          <p><a href="guide.html#verified-crawlers">Verified crawlers</a></p>
         </div>
         <div class="card">
           <h3>The same answers, proven</h3>
@@ -87,27 +116,8 @@
         </div>
         <div class="card">
           <h3>Current Ruby and Rails</h3>
-          <p>Ruby 3.3 or later, tested on Rails 8.0 and 8.1. Bundler’s auto-require loads the gem, and the railtie no longer needs a preloaded ActiveSupport.</p>
+          <p>Ruby 3.3 or later, tested on Rails 8.0 and 8.1. A <code>browser</code> helper in every controller and view, Client Hints read for Windows 11, and a cache that makes a returning visitor cost a hash lookup.</p>
           <p><a href="guide.html#rails">Rails</a></p>
-        </div>
-      </div>
-    </section>
-
-    <section aria-labelledby="start-title">
-      <h2 id="start-title">Quick start</h2>
-      <div class="split">
-        <div>
-          <p class="code-label">Gemfile</p>
-<pre><code class="language-ruby"><span class="n">gem</span> <span class="s2">"agentry"</span> <span class="c1"># instead of gem "browser"</span></code></pre>
-        </div>
-        <div>
-          <p class="code-label">Ruby</p>
-<pre><code class="language-ruby"><span class="nb">require</span> <span class="s2">"browser"</span>
-
-<span class="n">browser</span> <span class="o">=</span> <span class="no">Browser</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">user_agent</span><span class="p">,</span> <span class="ss">accept_language: </span><span class="s2">"en-us"</span><span class="p">)</span>
-<span class="n">browser</span><span class="p">.</span><span class="nf">chrome?</span>
-<span class="n">browser</span><span class="p">.</span><span class="nf">bot?</span>
-<span class="n">browser</span><span class="p">.</span><span class="nf">device</span><span class="p">.</span><span class="nf">mobile?</span></code></pre>
         </div>
       </div>
     </section>
