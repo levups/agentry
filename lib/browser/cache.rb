@@ -6,6 +6,10 @@ module Browser
   # GVL a Hash read is atomic, and a thread that misses detects again. Writes
   # do, for the Rubies without a GVL.
   module Cache
+    # Far more than a browser sends. A longer list is parsed again each time: 2 KB of "a,a,a" makes a thousand
+    # objects, and a thousand such headers would hold 100 MB.
+    MAX_LANGUAGES_PER_CACHED_HEADER = 32
+
     @mutex = Mutex.new
     @detection_by_user_agent = {}
     @languages_by_header = {}
@@ -28,11 +32,13 @@ module Browser
     def self.accept_language(header)
       return AcceptLanguage.parse(header) if Browser.cache_size.zero?
 
-      languages = @languages_by_header[header] || @mutex.synchronize do
-        store(@languages_by_header, -header,
-          AcceptLanguage.parse(header).freeze)
-      end
-      languages.dup
+      languages = @languages_by_header[header]
+      return languages.dup if languages
+
+      languages = AcceptLanguage.parse(header)
+      return languages if languages.size > MAX_LANGUAGES_PER_CACHED_HEADER
+
+      @mutex.synchronize { store(@languages_by_header, -header, languages.freeze) }.dup
     end
 
     # Bumped when a matcher list, the bot list or its exceptions change: the

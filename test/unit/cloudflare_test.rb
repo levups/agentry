@@ -57,6 +57,19 @@ class CloudflareTest < Minitest::Test
     refute cloudflare("HTTP_X_BOT_VERIFIED" => "true#{" " * 200}").verified_bot?
   end
 
+  test "ignores a value that is not valid UTF-8" do
+    invalid = ->(value) { "#{value}\xFF".force_encoding(Encoding::UTF_8) }
+    cloudflare = cloudflare(
+      "HTTP_X_BOT_VERIFIED" => invalid.call("true"), "HTTP_X_BOT_CATEGORY" => invalid.call("Search Engine Crawler"),
+      "HTTP_X_BOT_SCORE" => invalid.call("1"), "HTTP_CF_IPCOUNTRY" => invalid.call("US")
+    )
+
+    refute cloudflare.verified_bot?
+    assert_nil cloudflare.bot_category
+    assert_nil cloudflare.bot_score
+    assert_nil cloudflare.country
+  end
+
   test "reads the header names a site chose" do
     Browser::Cloudflare.header_names = {verified_bot: "X-Edge-Good-Bot", bot_score: "X-Edge-Score"}
 

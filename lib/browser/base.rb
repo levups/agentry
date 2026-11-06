@@ -9,7 +9,7 @@ module Browser
     # headers: the Rack env (request.env), for the client hints and the
     # Cloudflare headers.
     def initialize(ua, accept_language: nil, headers: nil)
-      validate_size(:user_agent, ua.to_s)
+      Base.validate_size(:user_agent, ua.to_s)
 
       @ua = ua
       @accept_language_raw = accept_language.to_s
@@ -24,7 +24,7 @@ module Browser
     # Return an array with all preferred languages that this browser accepts.
     def accept_language
       @accept_language ||= begin
-        validate_size(:accept_language, @accept_language_raw)
+        Base.validate_size(:accept_language, @accept_language_raw)
         Cache.accept_language(@accept_language_raw)
       end
     end
@@ -288,7 +288,7 @@ module Browser
       @detection ||= Cache.detection(ua)
     end
 
-    private def validate_size(subject, input)
+    def self.validate_size(subject, input)
       actual_bytesize = input.bytesize
       size_limit =
         if subject == :user_agent

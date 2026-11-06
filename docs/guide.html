@@ -243,7 +243,7 @@
           <tr><td><code>accept_language:</code></td><td><code>nil</code></td><td>The Accept-Language header, passed to <code>Browser.new</code>; parsed into <code>browser.accept_language</code>.</td></tr>
           <tr><td><code>headers:</code></td><td><code>nil</code></td><td>The Rack env of the request, passed to <code>Browser.new</code>; read for the <a href="#client-hints">Client Hints</a> and the <a href="#cloudflare">Cloudflare</a> headers. The Rails helper and the middleware pass it.</td></tr>
           <tr><td><code>Browser.user_agent_size_limit</code></td><td>2048</td><td>Largest user agent accepted, in bytes. A larger one raises <code>Browser::Error</code>.</td></tr>
-          <tr><td><code>Browser.accept_language_size_limit</code></td><td>2048</td><td>Largest Accept-Language header accepted, in bytes. A larger one raises <code>Browser::Error</code>.</td></tr>
+          <tr><td><code>Browser.accept_language_size_limit</code></td><td>2048</td><td>Largest Accept-Language header accepted, in bytes. A larger one raises <code>Browser::Error</code>. A header listing more than 32 languages is parsed on each request, never cached.</td></tr>
           <tr><td><code>Browser.cache_size</code></td><td>1000</td><td>Distinct user agents (and Accept-Language headers) whose detection each process keeps, about 1 KB each; emptied when full or when a matcher list or the bot list changes. <code>0</code> turns it off.</td></tr>
           <tr><td><code>Browser::Bot.matchers</code></td><td>three built-in matchers</td><td>Callables deciding whether a user agent is a bot. See <a href="bots.html#matchers">Bots</a>.</td></tr>
           <tr><td><code>Browser::Bot.bots</code></td><td><code>bots.yml</code></td><td>Known bots, keyed by a lowercase substring of their user agent.</td></tr>
@@ -256,6 +256,7 @@
       <div class="prose">
 <pre><code class="language-ruby"><span class="no">Browser</span><span class="p">.</span><span class="nf">user_agent_size_limit</span> <span class="o">=</span> <span class="mi">4096</span>
 <span class="no">Browser</span><span class="p">.</span><span class="nf">accept_language_size_limit</span> <span class="o">=</span> <span class="mi">4096</span></code></pre>
+        <p>A user agent or an Accept-Language header whose bytes are not valid UTF-8 (forged, or read back from a log file) does not raise: each invalid byte is read as U+FFFD. A Client Hint or a Cloudflare header that is not valid UTF-8 is ignored.</p>
       </div>
     </section>
 
@@ -317,6 +318,7 @@
 <span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="o">::</span><span class="no">IPRanges</span><span class="p">.</span><span class="nf">dns_cache_ttl</span> <span class="o">=</span> <span class="mi">3600</span>    <span class="c1"># seconds a verdict holds (the default)</span>
 <span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="o">::</span><span class="no">IPRanges</span><span class="p">.</span><span class="nf">dns_timeout</span> <span class="o">=</span> <span class="mf">0.5</span>       <span class="c1"># seconds per query and nameserver, 1 by default</span></code></pre>
         <p>Each process holds its own cache. An attacker spreading over many IPs still costs one wait per IP: on a hot path, run the check in a background job and keep the answer in your own cache.</p>
+        <p>The answers come from a name server the requester chooses, and versions of the <code>resolv</code> gem before 0.7.2 (0.3.2 in the 0.3 series) can be made to use up memory or CPU by such answers (CVE-2026-80212, CVE-2025-24294). Before turning <code>reverse_dns:</code> on, check <code>bundle info resolv</code>, or add <code>gem "resolv", "&gt;= 0.7.2"</code> to your Gemfile.</p>
         <p><strong>Fresh ranges.</strong> The weekly bot sync rewrites <code>bot_ip_ranges.yml</code> from the owners’ JSON files, and each release ships them. A process that runs for weeks can fetch them again. Each process holds its own copy; a failed source raises <code>Browser::Error</code> and keeps the current ranges:</p>
 <pre><code class="language-ruby"><span class="no">Browser</span><span class="o">::</span><span class="no">Bot</span><span class="o">::</span><span class="no">IPRanges</span><span class="p">.</span><span class="nf">refresh</span> <span class="c1"># fetches every owner's JSON, swaps the ranges at once</span>
 

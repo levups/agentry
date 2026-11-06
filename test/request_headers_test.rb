@@ -38,4 +38,20 @@ class RequestHeadersTest < Minitest::Test
 
     assert_equal [true, "FR"], seen
   end
+
+  test "the middleware and the helper read headers that are not valid UTF-8" do
+    headers = HEADERS.merge("HTTP_ACCEPT_LANGUAGE" => "fr-FR")
+      .transform_values { |value| "#{value}\xFF".force_encoding(Encoding::UTF_8) }
+    middleware = Browser::Middleware.new(->(_env) { [200, {}, []] }) do
+      redirect_to "/upgrade" if browser.chrome? && browser.accept_language.first.code == "fr"
+    end
+
+    status, = middleware.call(Rack::MockRequest.env_for("/", headers))
+    # Rails itself raises on such an Accept header.
+    _status, _headers, body = SignalsController.action(:show)
+      .call(Rack::MockRequest.env_for("/", headers.merge("HTTP_ACCEPT" => "text/html")))
+
+    assert_equal 302, status
+    assert_equal "10.0 false ", body.each.to_a.join
+  end
 end

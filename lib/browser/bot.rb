@@ -117,6 +117,7 @@ module Browser
     private_class_method :trie_source, :trie_node_source
 
     def self.why?(ua)
+      ua = ua.scrub unless ua.valid_encoding?
       ua = ua.downcase.strip
       browser = Browser.new(ua)
       matchers.find { |matcher| matcher.call(ua, browser) }
