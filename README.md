@@ -1,29 +1,71 @@
 # Agentry
 
-Browser detection for Ruby, with ActionController integration: the API of the
-[browser](https://rubygems.org/gems/browser) gem, faster, and a bot list that stays fresh. Put `gem "agentry"` in
-your Gemfile instead of `gem "browser"`, and every call site keeps working — same `Browser` namespace, same
-`require "browser"`, same predicates.
+Agentry reads the `User-Agent` header of an HTTP request and tells you who sent it: the browser and its version,
+the operating system, the device, or the bot. It is a Ruby gem, with a helper for Rails controllers and views and a
+Rack middleware.
 
-- **Faster**: 25 µs per request instead of 126 µs with browser 6.2.0, 2 µs once a user agent was seen (Ruby 4.0.9,
-  YJIT, `bench/request.rb`).
-- **Fresher bots**: synced every week from [crawler-user-agents](https://github.com/monperrus/crawler-user-agents)
-  and [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt), with categories (`bot.category`, `bot.ai?`).
-  Of the 882 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out),
-  browser misses 353, Agentry 11.
-- **Verified signals**: `bot.verified?(ip)` checks a crawler against the IP ranges Google, Bing, OpenAI, Apple,
-  Perplexity and DuckDuckGo publish, `browser.cloudflare` reads the headers of a Cloudflare Transform Rule, and
-  Chromium's Client Hints tell Windows 11 from Windows 10.
+For an iPhone running Safari 18.1, set to French:
 
-Site: https://levups.github.io/agentry/
+```ruby
+browser = Browser.new(request.user_agent, accept_language: request.headers["Accept-Language"])
+
+browser.name                       # => "Safari"
+browser.version                    # => "18"
+browser.platform.name              # => "iOS (iPhone)"
+browser.device.mobile?             # => true
+browser.bot?                       # => false
+browser.accept_language.first.full # => "fr-FR"
+```
+
+Site and guide: https://levups.github.io/agentry/
+
+## Where it comes from
+
+Agentry is a fork of [browser](https://github.com/fnando/browser), written by Nando Vieira, which has not changed
+since June 2025. It keeps browser's API as it is: the `Browser` class, `require "browser"` and every method below
+work the same way, so an app switches by replacing one line of its Gemfile.
+
+On top of that API, Agentry:
+
+- answers faster: 25 µs per request instead of 126 µs with browser 6.2.0, and 2 µs once a user agent has been
+  seen (Ruby 4.0.9 with YJIT, `bench/request.rb`);
+- updates its bot list every week from [crawler-user-agents](https://github.com/monperrus/crawler-user-agents)
+  and [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt). Of the 882 crawler user agents added to
+  crawler-user-agents since 2024 (test drivers and scanners left out), browser misses 353 and Agentry 11;
+- says what kind of bot it is (`bot.category`, `bot.ai?`);
+- checks that a request claiming to come from Googlebot, Bingbot, GPTBot or a few others really comes from that
+  company's published IP ranges (`bot.verified?(ip)`);
+- reads the headers Cloudflare can add about a request, and the Client Hints Chromium sends, which tell Windows 11
+  from Windows 10.
 
 ## Installation
+
+Add it to your Gemfile:
 
 ```ruby
 gem "agentry"
 ```
 
+If the Gemfile has `gem "browser"`, replace that line: the two gems define the same `Browser` class, so Agentry
+refuses to load next to browser. Agentry needs Ruby 3.3 or later, and is tested on Rails 8.0 and 8.1.
+
 ## Usage
+
+In Rails, every controller and view gets a `browser` helper for the current request:
+
+```erb
+<% if browser.bot? %>
+  <p>Hello, <%= browser.bot.name %>.</p>
+<% end %>
+```
+
+Anywhere else, build one from a user agent string. `accept_language:` and `headers:` are optional:
+
+```ruby
+browser = Browser.new(user_agent, accept_language: accept_language_header, headers: rack_env)
+```
+
+Here is everything you can ask:
 
 ```ruby
 require "browser"
@@ -147,11 +189,12 @@ browser.platform.windows_xp?
 browser.platform.kai_os?
 ```
 
+The lists of what is detected live in [lib/browser/platform.rb](lib/browser/platform.rb),
+[lib/browser/device.rb](lib/browser/device.rb) and [bots.yml](bots.yml).
+
 ### Aliases
 
-To add aliases like `mobile?` and `tablet?` to the base object (e.g
-`browser.mobile?`), require the `browser/aliases` file and extend the
-Browser::Base object like the following:
+`require "browser/aliases"` adds shortcuts such as `browser.mobile?` and `browser.tablet?` to the browser object:
 
 ```ruby
 require "browser/aliases"
@@ -161,23 +204,12 @@ browser = Browser.new("Some user agent")
 browser.mobile? #=> false
 ```
 
-### What's being detected?
+### Modern browsers
 
-- For a list of platform detections, check
-  [lib/browser/platform.rb](lib/browser/platform.rb)
-- For a list of device detections, check
-  [lib/browser/device.rb](lib/browser/device.rb)
-- For a list of bot detections, check
-  [bots.yml](bots.yml)
-
-### Detecting modern browsers
-
-To detect whether a browser can be considered as modern or not, create a method
-that abstracts your versioning constraints. The following example will consider
-any of the following browsers as a modern:
+Agentry has no built-in notion of a modern browser: write one with your own version constraints. For example:
 
 ```ruby
-# Expects an Browser instance,
+# Expects a Browser instance,
 # like in `Browser.new(user_agent, accept_language: language)`.
 def modern_browser?(browser)
   [
@@ -194,30 +226,9 @@ def modern_browser?(browser)
 end
 ```
 
-### Migrating from browser
+### Rails
 
-Replace `gem "browser"` with `gem "agentry"` in the Gemfile, nothing else: `require "browser"`, the `Browser`
-namespace and every predicate stay. Both gems define `Browser`, so Agentry refuses to load next to `browser`,
-with an error saying so, rather than letting one silently override the other. Agentry requires Ruby 3.3 or later
-and is tested on Rails 8.0 and 8.1.
-
-What changes on its own: the bots of the weekly sync are bots from the day you switch (600 user agents of the
-corpus that browser took for humans), so analytics that leave bots out count fewer visitors from that day; 792
-user agents named `Generic Bot` get a name; no browser, platform or device answer moves, and test drivers stay out
-of `bot?`. To roll back, put `gem "browser"` back, after removing the calls to what browser lacks
-(`Browser.cache_size=`, `bot.category`, `bot.ai?`, `bot.user_triggered?`). The
-[migration guide](https://levups.github.io/agentry/guide.html#migrating) has the details.
-
-### Rails integration
-
-Just add it to the Gemfile.
-
-```ruby
-gem "agentry"
-```
-
-This adds a helper method called `browser`, that inspects your current user
-agent.
+The gem adds the `browser` helper to every controller and view on its own:
 
 ```erb
 <% if browser.ie?(6) %>
@@ -225,17 +236,16 @@ agent.
 <% end %>
 ```
 
-If you want to use Browser on your Rails app but don't want to taint your
-controller, use the following line on your Gemfile:
+To use Agentry in a Rails app without that helper, require only the library:
 
 ```ruby
 gem "agentry", require: "browser/browser"
 ```
 
-### Accept Language
+### Accept-Language
 
-Parses the accept-language header from an HTTP request and produces an array of
-language objects sorted by quality.
+`browser.accept_language` parses the `Accept-Language` header into the languages the visitor accepts, most
+wanted first:
 
 ```ruby
 browser = Browser.new("Some User Agent", accept_language: "en-us")
@@ -261,22 +271,14 @@ language.name
 #=> "English/United States"
 ```
 
-Result is always sorted in quality order from highest to lowest. As per the HTTP
-spec:
-
-- omitting the quality value implies 1.0.
-- quality value equal to zero means that is not accepted by the client.
+As the HTTP spec says, a language without a quality value has 1.0, and one with a quality of 0 is not accepted,
+so it is left out.
 
 ### Internet Explorer
 
-Internet Explorer has a compatibility view mode that allows newer versions
-(IE8+) to run as an older version. Browser will always return the navigator
-version, ignoring the compatibility view version, when defined. If you need to
-get the engine's version, you have to use `Browser#msie_version` and
-`Browser#msie_full_version`.
-
-So, let's say an user activates compatibility view in a IE11 browser. This is
-what you'll get:
+Internet Explorer 8 and later have a compatibility view, in which they report an older version. Agentry returns
+the browser's own version and ignores the compatibility view; `Browser#msie_version` and
+`Browser#msie_full_version` give the version the engine reports. With compatibility view on in IE11:
 
 ```ruby
 browser.version
@@ -295,14 +297,12 @@ browser.compatibility_view?
 #=> true
 ```
 
-This behavior changed in browser v1.0.0; previously there wasn't a way of getting the
-real browser version.
+browser 1.0.0 introduced this; before it, there was no way to get the real version.
 
 ### Safari
 
-iOS webviews and web apps aren't detected as Safari anymore, so be aware of that
-if that's your case. You can use a combination of platform and webkit detection
-to do whatever you want.
+An iOS web view, or a site saved to the home screen, is not Safari. Combine the platform and WebKit checks to
+find them:
 
 ```ruby
 # iPad's Safari running as web app mode.
@@ -318,61 +318,72 @@ browser.platform.ios?
 #=> true
 ```
 
-### Bots
+## Bots
 
-The bot detection is quite aggressive. Anything that matches at least one of the
-following requirements will be considered a bot.
+`browser.bot?` is true for:
 
-- Empty user agent string
-- User agent that matches `/crawl|fetch|search|monitoring|spider|bot/`
-- Any known bot listed under
-  [bots.yml](bots.yml)
+- an empty user agent;
+- a user agent matching `/crawl|fetch|search|monitoring|spider|bot/`;
+- a user agent containing one of the keywords of [bots.yml](bots.yml).
 
-Every week, `script/sync_bots.rb` adds the bots of
+The net is wide, as it was in browser.
+
+```ruby
+browser = Browser.new("Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)")
+
+browser.bot?          # => true
+browser.bot.name      # => "ChatGPT"
+browser.bot.category  # => :ai_crawler
+browser.bot.ai?       # => true
+```
+
+Every Monday, a workflow runs `script/sync_bots.rb`, which adds the bots of
 [crawler-user-agents](https://github.com/monperrus/crawler-user-agents) and
-[ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) (both MIT) to the end of `bots.yml`, and
-categorizes them in `bot_categories.yml`, through a pull request that lists the answers that change. How many of
-those lists' bots browser and Agentry detect, per category, is on the
-[Bots page](https://levups.github.io/agentry/bots.html#coverage).
+[ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) (both MIT) to the end of `bots.yml` and files them
+under a category in `bot_categories.yml`. It opens a pull request listing every answer that changes, and a
+maintainer merges it. The [Bots page](https://levups.github.io/agentry/bots.html#coverage) counts, per category,
+how many of those lists' bots browser and Agentry detect.
 
-`browser.bot.category` names what the bot declares it is, with the names of Cloudflare's verified bot categories
-where one fits (`search_engine_crawler`, `ai_crawler`, `ai_search`, `ai_assistant`, `page_preview`,
-`feed_fetcher`, `monitoring_and_analytics`, `advertising_and_marketing`, `archiver`, `security`…), plus
-`ai_agent`, `http_library`, `scanner` and `browser_automation`. `bot.ai?` is true for the four AI categories,
-`bot.user_triggered?` for `ai_assistant` and `ai_agent`. The category is `nil` for a browser, a bot exception
-and a bot no list names.
+### Categories
 
-HTTP libraries (`curl`, `got`, `python-requests`) and scanners (sqlmap, Nikto, Censys) are bots, as `curl` and
-`python-requests` already were in browser. Test drivers (headless Chrome, Playwright, Puppeteer, Selenium) are
-not: an app's system tests drive a real browser through them, and the headless Chrome of Playwright and Selenium
-sends `HeadlessChrome`. They get the `browser_automation` category instead, so an app can tell them apart in
-production (`browser.bot? || browser.bot.category == :browser_automation`). PhantomJS stays a bot, as in
-browser.
+`browser.bot.category` is what the bot says it is. The names follow Cloudflare's verified bot categories where
+one fits (`search_engine_crawler`, `ai_crawler`, `ai_search`, `ai_assistant`, `page_preview`, `feed_fetcher`,
+`monitoring_and_analytics`, `advertising_and_marketing`, `archiver`, `security`…), plus `ai_agent`,
+`http_library`, `scanner` and `browser_automation`. `bot.ai?` is true for the four AI categories, and
+`bot.user_triggered?` for `ai_assistant` and `ai_agent`, the ones a person is driving at that moment
+(ChatGPT-User, Claude-User). The category is `nil` for a browser, for a bot exception, and for a bot no list
+names.
 
-To add custom matchers, you can add a callable object to
-`Browser::Bot.matchers`. The following example matches everything that has a
-`externalhit` substring on it. The bot name will always be `General Bot`.
+HTTP libraries (`curl`, `got`, `python-requests`) and scanners (sqlmap, Nikto, Censys) count as bots, as `curl`
+and `python-requests` already did in browser. Test drivers (headless Chrome, Playwright, Puppeteer, Selenium) do
+not: your own system tests drive a real browser through them, and the headless Chrome of Playwright and Selenium
+sends `HeadlessChrome`. They get the `browser_automation` category, so production code can still spot them with
+`browser.bot? || browser.bot.category == :browser_automation`. PhantomJS stays a bot, as in browser.
+
+### Your own rules
+
+A matcher is anything that responds to `call(ua, browser)`. This one flags every user agent containing
+`externalhit`, under the name `Generic Bot`:
 
 ```ruby
 Browser::Bot.matchers << ->(ua, _browser) { ua.match?(/externalhit/i) }
 ```
 
-To clear all matchers, including the ones that are bundled, use
-`Browser::Bot.matchers.clear`. You can re-add built-in matchers by doing the
-following:
+`Browser::Bot.matchers.clear` removes every matcher, the built-in ones included, and this puts the built-in ones
+back:
 
 ```ruby
 Browser::Bot.matchers += Browser::Bot.default_matchers
 ```
 
-To restore v2's bot detection, remove the following matchers:
+To get the bot detection of browser 2.x back, remove two matchers:
 
 ```ruby
 Browser::Bot.matchers.delete(Browser::Bot::KeywordMatcher)
 Browser::Bot.matchers.delete(Browser::Bot::EmptyUserAgentMatcher)
 ```
 
-To extend the bot list, you can manipulate the methods below:
+The lists themselves can be changed at runtime:
 
 ```ruby
 Browser::Bot.bots.merge!(new_bots_hash)
@@ -383,9 +394,11 @@ Browser::Bot.category_by_keyword["faraday"] = :http_library
 
 ### Verified crawlers
 
-Google, Bing, OpenAI, Apple, Perplexity and DuckDuckGo publish their crawlers' IP ranges. They ship in
-`bot_ip_ranges.yml` (as JSON in the gem), rewritten by the weekly sync (`script/sync_ip_ranges.rb`). The lookup is a binary search, no
-network call; an IP that does not parse answers `false`.
+Anyone can send `Googlebot` as their user agent. Google, Bing, OpenAI, Apple, Perplexity and DuckDuckGo publish
+the IP ranges their crawlers use, and Agentry ships them, refreshed by the weekly sync
+(`script/sync_ip_ranges.rb`). `bot.verified?(ip)` says whether a request comes from the ranges of the company its
+user agent names. The check is a binary search in memory, with no network call, and an IP that does not parse
+answers `false`.
 
 ```ruby
 browser.bot.owner                                            # => :google for a user agent claiming Googlebot
@@ -394,21 +407,37 @@ browser.bot.verified?(request.remote_ip, reverse_dns: true)  # also Google's DNS
 Browser::Bot::IPRanges.refresh                               # fetches the ranges again, in a long-lived process
 ```
 
-### Cloudflare and Client Hints
+Pass the IP as your proxies resolve it: `request.remote_ip` in Rails, with `trusted_proxies` set.
 
-`Browser.new(user_agent, accept_language:, headers: rack_env)` also reads the request's headers; the Rails helper
-and the middleware pass them. `browser.cloudflare` reads the headers a Cloudflare Transform Rule sets
-(`verified_bot?`, `bot_category`, `bot_score`) and `CF-IPCountry` (`country`); their names are configurable with
-`Browser::Cloudflare.header_names = {bot_score: "X-My-Score"}`. Chromium's Client Hints (`Sec-CH-UA`,
-`Sec-CH-UA-Mobile`, `Sec-CH-UA-Platform`, `Sec-CH-UA-Platform-Version`) refine the platform and the device, and
-`browser.platform.windows11?` needs them. Without `headers:`, every answer is the user agent's, as before. The
-rule to create and the details are in the [guide](https://levups.github.io/agentry/guide.html#cloudflare).
+`reverse_dns: true` costs two DNS queries for an IP outside the ranges. The IP's owner controls its reverse DNS,
+so a fake Googlebot can make that lookup wait `dns_timeout` (1 second) per nameserver of `/etc/resolv.conf`. A
+cache, off by default, remembers each answer, failures included:
 
-`bench/signals.rb` measures what they cost.
+```ruby
+Browser::Bot::IPRanges.dns_cache_size = 10_000 # 0, the default, caches nothing
+Browser::Bot::IPRanges.dns_cache_ttl = 3600    # seconds
+Browser::Bot::IPRanges.dns_timeout = 0.5       # seconds per query and nameserver
+```
 
-### Middleware
+## Cloudflare and Client Hints
 
-You can use the `Browser::Middleware` to redirect user agents.
+Pass the Rack env as `headers:` (the Rails helper and the middleware do it for you) and Agentry reads two more
+sources:
+
+- `browser.cloudflare` reads the headers a Cloudflare Transform Rule sets (`verified_bot?`, `bot_category`,
+  `bot_score`) and `CF-IPCountry` (`country`). Their names can be changed with
+  `Browser::Cloudflare.header_names = {bot_score: "X-My-Score"}`.
+- Chromium's Client Hints (`Sec-CH-UA`, `Sec-CH-UA-Mobile`, `Sec-CH-UA-Platform`, `Sec-CH-UA-Platform-Version`)
+  refine the platform and the device. `browser.platform.windows11?` needs them.
+
+These headers prove something only when every request goes through Cloudflare: if clients can reach your server
+directly, they can send the headers themselves. The rule to create, and how to lock the origin, are in the
+[guide](https://levups.github.io/agentry/guide.html#cloudflare). Without `headers:`, every answer comes from the
+user agent alone, as in browser. `bench/signals.rb` measures what reading them costs.
+
+## Middleware
+
+`Browser::Middleware` redirects requests based on the browser:
 
 ```ruby
 use Browser::Middleware do
@@ -416,8 +445,7 @@ use Browser::Middleware do
 end
 ```
 
-If you're using Rails, you can use the route helper methods. Just add something
-like the following to a initializer file (`config/initializers/browser.rb`).
+In Rails, route helpers work too. In an initializer such as `config/initializers/browser.rb`:
 
 ```ruby
 Rails.configuration.middleware.use Browser::Middleware do
@@ -425,8 +453,7 @@ Rails.configuration.middleware.use Browser::Middleware do
 end
 ```
 
-If you need access to the `Rack::Request` object (e.g. to exclude a path), you
-can do so with `request`.
+`request` is the `Rack::Request`, for instance to leave a path alone:
 
 ```ruby
 Rails.configuration.middleware.use Browser::Middleware do
@@ -434,25 +461,19 @@ Rails.configuration.middleware.use Browser::Middleware do
 end
 ```
 
-### Restrictions
+## Limits and cache
 
-- User agent has a size limit of 2048 bytes. This can be customized through
-  `Browser.user_agent_size_limit=(size)`.
-- Accept-Language has a size limit of 2048 bytes. This can be customized through
-  `Browser.accept_language_size_limit=(size)`.
-
-If size is not respected, then `Browser::Error` is raised.
+A user agent or an `Accept-Language` header longer than 2048 bytes raises `Browser::Error`. Both limits can be
+raised:
 
 ```ruby
 Browser.user_agent_size_limit = 4096
 Browser.accept_language_size_limit = 4096
 ```
 
-### Cache
-
-Each process keeps what it detected for the last 1,000 distinct user agents (browser, platform, device, bot
-answers) and the last 1,000 Accept-Language headers it parsed, about 1 KB per user agent: a repeated user agent
-costs about 2 µs. The cache empties itself when full, and when `Browser.matchers`, `Browser::Bot.matchers`,
+Each process remembers what it found for the last 1,000 user agents (browser, platform, device, bot answers) and
+the last 1,000 `Accept-Language` headers, about 1 KB per user agent: a user agent seen before costs about 2 µs.
+The cache empties itself when it is full, and when `Browser.matchers`, `Browser::Bot.matchers`,
 `Browser::Platform.matchers`, `Browser::Device.matchers`, the bot list or its exceptions change. Setting
 `Browser.cache_size` empties it too, for example after renaming an entry of `Browser::Bot.bots` in place.
 
@@ -460,31 +481,43 @@ costs about 2 µs. The cache empties itself when full, and when `Browser.matcher
 Browser.cache_size = 5_000 # 0 turns it off
 ```
 
-### Preloading before a fork
-
-The lists, the matchers and the bot keyword tries are built on first use: the first request of each process pays
-about 13 ms for them, the next ones 0.2 ms. `Browser.eager_load!` builds them up front, so a server that preloads
-its app before forking (Puma's `preload_app!`, Unicorn, Pitchfork) shares them with every worker. Rails calls it on
-its own when it eager loads, which production does by default. Elsewhere, call it before the fork:
+The lists and matchers are built on first use: the first request of each process takes about 13 ms more, the
+following ones 0.2 ms. `Browser.eager_load!` builds them at boot, so that a server that loads the app before
+forking (Puma's `preload_app!`, Unicorn, Pitchfork) shares them with every worker. Rails calls it whenever it
+eager loads, which production does by default. Elsewhere, call it before the fork:
 
 ```ruby
 Browser.eager_load!
 ```
 
+## Migrating from browser
+
+Replace `gem "browser"` with `gem "agentry"` in the Gemfile. Nothing else in the code changes.
+
+Some answers do change from the day you switch, because of the fresher bot list: 600 user agents of the corpus
+that browser took for people are bots in Agentry, so analytics that leave bots out will count fewer visitors, and
+792 user agents that browser called `Generic Bot` get a real name. No browser, platform or device answer changes,
+and test drivers still are not bots.
+
+To go back, remove the calls to what browser does not have (`Browser.cache_size=`, the `headers:` argument,
+`bot.category`, `bot.ai?`, `bot.user_triggered?`, `bot.verified?`, `browser.cloudflare`), then put `gem "browser"` back. The
+[migration guide](https://levups.github.io/agentry/guide.html#migrating) has the details.
+
 ## Performance
 
-`bench/request.rb` replays what a web request asks (name, version, `bot?`, platform, device, accept-language) over
-2,000 distinct user agents of the corpus and over 20 repeated ones, median of 7. On Ruby 4.0.9 with YJIT, browser
-6.2.0 takes 126 µs and 245 objects per request, Agentry 25 µs and 52 objects on a new user agent, 2 µs and 12
-objects on a repeated one. All four runs, with and without YJIT, are on the
-[benchmarks page](https://levups.github.io/agentry/benchmarks.html).
+`bench/request.rb` replays what a web request asks (name, version, `bot?`, platform, device, accept-language)
+over 2,000 distinct user agents of the corpus and over 20 repeated ones, and keeps the median of 7 runs. On Ruby
+4.0.9 with YJIT, browser 6.2.0 takes 126 µs and 245 objects per request. Agentry takes 25 µs and 52 objects for a
+new user agent, and 2 µs and 12 objects for one it has seen. The
+[benchmarks page](https://levups.github.io/agentry/benchmarks.html) has all four runs, with and without YJIT.
 
 ```bash
 bundle exec rake bench UPSTREAM=path/to/upstream # fnando/browser at dd88933
 ```
 
-It runs `ruby [--yjit] -I lib bench/request.rb --write` for each gem and JIT, which records the run (gem, commit,
-Ruby, YJIT, machine, date) in `docs/benchmarks.json`, then `rake docs:render` rewrites the site's numbers from it.
+It runs `ruby [--yjit] -I lib bench/request.rb --write` for each gem and JIT setting, and records each run (gem,
+commit, Ruby, YJIT, machine, date) in `docs/benchmarks.json`. `rake docs:render` then rewrites the site's numbers
+from that file.
 
 ## Development
 
@@ -494,8 +527,9 @@ bundle exec rake test
 bundle exec rubocop
 ```
 
-A change that is not meant to change an answer proves it on the corpus of 20,000 user agents, against a plain
-clone of [fnando/browser](https://github.com/fnando/browser) at `dd88933`, as CI does on every pull request:
+The repository holds a corpus of 20,000 user agents. A change that should not change any answer has to prove it,
+by comparing every answer with those of [fnando/browser](https://github.com/fnando/browser) at `dd88933`, as CI
+does on every pull request:
 
 ```bash
 ruby -I path/to/upstream/lib script/corpus_snapshot.rb > /tmp/upstream.jsonl
@@ -503,10 +537,11 @@ ruby -I lib script/corpus_snapshot.rb > /tmp/agentry.jsonl
 ruby script/corpus_diff.rb /tmp/upstream.jsonl /tmp/agentry.jsonl
 ```
 
-The diff passes when the answers that differ are exactly those of `corpus/expected_differences.jsonl`: a change
-meant to change answers rewrites it with `ruby script/corpus_diff.rb --write …` and shows its diff.
+The comparison passes when the answers that differ are exactly those listed in
+`corpus/expected_differences.jsonl`. A change meant to change answers rewrites that file with
+`ruby script/corpus_diff.rb --write …`, and its diff shows what changed.
 
-The weekly bot sync (`.github/workflows/bot-sync.yml`) runs the same steps by hand:
+The weekly bot sync (`.github/workflows/bot-sync.yml`) runs these steps, which also work by hand:
 
 ```bash
 ruby script/sync_bots.rb                         # bots.yml and bot_categories.yml
@@ -516,19 +551,18 @@ ruby script/bot_coverage.rb path/to/upstream/lib # docs/bot_coverage.json, and i
 ruby script/render_docs.rb                       # the site's numbers, from docs/*.json and the lists
 ```
 
-The numbers of `docs/*.html` sit between `<!-- render:… -->` markers and come from `docs/benchmarks.json`,
-`docs/bot_coverage.json`, the bot lists and `corpus/expected_differences.jsonl`: CI fails when a page differs from
-what `bundle exec rake docs:render` writes.
+The numbers on the site's pages (`docs/*.html`) sit between `<!-- render:… -->` markers and come from
+`docs/benchmarks.json`, `docs/bot_coverage.json`, the bot lists and `corpus/expected_differences.jsonl`. CI fails
+when a page differs from what `bundle exec rake docs:render` writes.
 
-To add a bot, add its user agent to `test/ua_bots.yml` and its readable name to `bots.yml` above the synced
-section, keyed by a lowercased string the user agent contains. A search engine goes in `test/ua_search_engines.yml`,
+To add a bot, add its user agent to `test/ua_bots.yml`, and its name to `bots.yml` above the synced section, under
+a lowercase string its user agent contains. A search engine goes in `test/ua_search_engines.yml`,
 `test/ua_bots.yml` and `search_engines.yml`.
 
 ### Releasing
 
-Pull requests leave `CHANGELOG.md` alone: a release starts by writing its notes under `## [Unreleased]`, from the
-pull requests merged since the last tag, without committing them. Then, from an up-to-date `main` whose CI is
-green:
+Pull requests leave `CHANGELOG.md` alone. A release starts by writing its notes under `## [Unreleased]`, from the
+pull requests merged since the last tag, without committing them. Then, from an up-to-date `main` with green CI:
 
 ```sh
 bin/release minor --dry-run   # the notes and the changes, nothing written
@@ -538,15 +572,15 @@ bin/release minor             # or patch, major, or an exact version such as 1.2
 `main` takes no direct push, so `bin/release` dates the Unreleased section and bumps the version on a branch
 `release/vX.Y.Z`, opens its pull request, which merges itself once CI is green, and waits for it. It then pushes a
 signed tag `vX.Y.Z` on the merge commit (`bin/release --tag X.Y.Z` does it if you stopped waiting). The tag starts
-the Release workflow, which publishes the gem to RubyGems through trusted publishing and creates the GitHub release
-with the version's notes and the `.gem`.
+the Release workflow. It checks that the tag is signed and on `main`, then publishes the gem to RubyGems through
+trusted publishing and creates the GitHub release with the version's notes and the `.gem`.
 
 ## License
 
 MIT, by Level UP Solutions, see [LICENSE.md](LICENSE.md). Originally written by Nando Vieira as
 [fnando/browser](https://github.com/fnando/browser) (MIT). The corpus gathers user agents from
 [ua-parser/uap-core](https://github.com/ua-parser/uap-core) (Apache 2.0),
-[crawler-user-agents](https://github.com/monperrus/crawler-user-agents) (MIT) and browser's test fixtures; the bot
+[crawler-user-agents](https://github.com/monperrus/crawler-user-agents) (MIT) and browser's test fixtures. The bot
 list and its categories come from [crawler-user-agents](https://github.com/monperrus/crawler-user-agents) (MIT)
-and [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) (MIT); the crawler IP ranges are those their
-owners publish for that purpose: see [corpus/SOURCES.md](corpus/SOURCES.md).
+and [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) (MIT). The crawler IP ranges are the ones
+their owners publish for that purpose. [corpus/SOURCES.md](corpus/SOURCES.md) lists every source.
