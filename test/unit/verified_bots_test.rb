@@ -17,18 +17,25 @@ class VerifiedBotsTest < Minitest::Test
 
   class FakeDNS
     attr_accessor :timeouts
+    attr_reader :queries
 
     def initialize(name_by_ip, addresses_by_name)
       @name_by_ip = name_by_ip
       @addresses_by_name = addresses_by_name
+      @queries = []
     end
 
     def getname(ip)
+      @queries << ip
       @name_by_ip.fetch(ip) { raise Resolv::ResolvError, "no name for #{ip}" }
     end
 
+    # An absolute name, so that the resolver's search list never applies.
     def getaddresses(name)
-      @addresses_by_name.fetch(name, [])
+      raise ArgumentError, "#{name} is not absolute" unless name.absolute?
+
+      @queries << name.to_s
+      @addresses_by_name.fetch(name.to_s, [])
     end
   end
 
@@ -39,13 +46,16 @@ class VerifiedBotsTest < Minitest::Test
 
   teardown do
     IP_RANGES.load(@shipped_prefixes_by_owner)
+    IP_RANGES.dns_timeout = IP_RANGES::DNS_TIMEOUT_SECONDS
+    IP_RANGES.dns_cache_size = 0
+    IP_RANGES.dns_cache_ttl = 3600
   end
 
   def with_dns(name_by_ip, addresses_by_name)
     dns = FakeDNS.new(name_by_ip, addresses_by_name)
     original_open = Resolv::DNS.method(:open)
     Resolv::DNS.define_singleton_method(:open) { |&block| block.call(dns) }
-    yield
+    yield dns
   ensure
     Resolv::DNS.define_singleton_method(:open, original_open)
   end
@@ -119,6 +129,73 @@ class VerifiedBotsTest < Minitest::Test
       "3.2.1.34.bc.googleusercontent.com" => [Resolv::IPv4.create("34.1.2.3")]) do
       refute Browser.new(GOOGLEBOT).bot.verified?("34.1.2.3", reverse_dns: true)
     end
+  end
+
+  GOOGLE_NAME_BY_IP = {"66.249.90.1" => "crawl-66-249-90-1.googlebot.com", "203.0.113.1" => "evil.example.com"}.freeze
+  GOOGLE_ADDRESSES_BY_NAME = {"crawl-66-249-90-1.googlebot.com" => [Resolv::IPv4.create("66.249.90.1")]}.freeze
+
+  test "reverse DNS asks the DNS on every call unless a cache is set" do
+    with_dns(GOOGLE_NAME_BY_IP, GOOGLE_ADDRESSES_BY_NAME) do |dns|
+      bot = Browser.new(GOOGLEBOT).bot
+      2.times { assert bot.verified?("66.249.90.1", reverse_dns: true) }
+
+      assert_equal 4, dns.queries.size
+      assert_equal IP_RANGES::DNS_TIMEOUT_SECONDS, dns.timeouts
+    end
+  end
+
+  test "reverse DNS remembers verdicts, forged ones included, when asked to" do
+    IP_RANGES.dns_cache_size = 10
+    with_dns(GOOGLE_NAME_BY_IP, GOOGLE_ADDRESSES_BY_NAME) do |dns|
+      bot = Browser.new(GOOGLEBOT).bot
+      2.times do
+        assert bot.verified?("66.249.90.1", reverse_dns: true)
+        refute bot.verified?("203.0.113.1", reverse_dns: true)
+        refute bot.verified?("203.0.113.2", reverse_dns: true)
+      end
+
+      assert_equal ["66.249.90.1", "crawl-66-249-90-1.googlebot.com", "203.0.113.1", "203.0.113.2"], dns.queries
+    end
+  end
+
+  test "reverse DNS forgets the oldest verdict when the cache is full" do
+    IP_RANGES.dns_cache_size = 1
+    with_dns(GOOGLE_NAME_BY_IP, GOOGLE_ADDRESSES_BY_NAME) do |dns|
+      bot = Browser.new(GOOGLEBOT).bot
+      %w[203.0.113.1 203.0.113.2 203.0.113.2 203.0.113.1].each { |ip| refute bot.verified?(ip, reverse_dns: true) }
+
+      assert_equal %w[203.0.113.1 203.0.113.2 203.0.113.1], dns.queries
+    end
+  end
+
+  test "reverse DNS asks again once a verdict expires" do
+    IP_RANGES.dns_cache_size = 10
+    IP_RANGES.dns_cache_ttl = 0.01
+    with_dns(GOOGLE_NAME_BY_IP, GOOGLE_ADDRESSES_BY_NAME) do |dns|
+      bot = Browser.new(GOOGLEBOT).bot
+      refute bot.verified?("203.0.113.1", reverse_dns: true)
+      sleep 0.02
+      refute bot.verified?("203.0.113.1", reverse_dns: true)
+
+      assert_equal %w[203.0.113.1 203.0.113.1], dns.queries
+    end
+  end
+
+  test "reverse DNS takes the timeout given" do
+    IP_RANGES.dns_timeout = 0.25
+    with_dns(GOOGLE_NAME_BY_IP, GOOGLE_ADDRESSES_BY_NAME) do |dns|
+      Browser.new(GOOGLEBOT).bot.verified?("203.0.113.1", reverse_dns: true)
+
+      assert_in_delta 0.25, dns.timeouts
+    end
+  end
+
+  test "refuses invalid DNS settings" do
+    [0, -1, "1", nil].each do |value|
+      assert_raises(ArgumentError) { IP_RANGES.dns_timeout = value }
+      assert_raises(ArgumentError) { IP_RANGES.dns_cache_ttl = value }
+    end
+    [-1, 1.5, "10", nil].each { |value| assert_raises(ArgumentError) { IP_RANGES.dns_cache_size = value } }
   end
 
   test "reverse DNS is not tried for owners that document none" do
