@@ -5,6 +5,8 @@ module Browser
   # sets (docs/guide.html#cloudflare) and its own CF-IPCountry. Each site names
   # its headers in its rule: Browser::Cloudflare.header_names= changes them.
   class Cloudflare
+    # Cloudflare's values are a few bytes: a longer one is forged, and ignored.
+    HEADER_SIZE_LIMIT_BYTES = 128
     DEFAULT_HEADER_NAMES = {
       verified_bot: "X-Bot-Verified",
       bot_category: "X-Bot-Category",
@@ -59,7 +61,7 @@ module Browser
 
     private def header(signal)
       value = @headers&.[](self.class.env_key_by_signal[signal])
-      value if value.is_a?(String)
+      value if value.is_a?(String) && value.bytesize <= HEADER_SIZE_LIMIT_BYTES
     end
   end
 end

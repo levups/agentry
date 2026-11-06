@@ -15,8 +15,10 @@ module Browser
             google-read-aloud google-safety google-site-verification googleagent-urlcontext googlebot
             googleother googleproducer mediapartners-google storebot-google
           ],
-          # https://developers.google.com/search/docs/crawling-indexing/verifying-googlebot
-          domains: %w[googlebot.com google.com googleusercontent.com],
+          # https://developers.google.com/search/docs/crawling-indexing/verifying-googlebot. Not
+          # googleusercontent.com: a Google Cloud VM's reverse DNS is x.x.x.x.bc.googleusercontent.com, and the
+          # user-triggered fetchers it also names are in the published ranges.
+          domains: %w[googlebot.com google.com],
           urls: %w[common-crawlers.json special-crawlers.json user-triggered-fetchers.json
             user-triggered-fetchers-google.json user-triggered-agents.json].map { |file| "#{GOOGLE_RANGES_URL}/#{file}" }
         },
@@ -51,6 +53,12 @@ module Browser
       # Owners move their files: Google's old URLs redirect to the new ones.
       MAX_REDIRECTS = 3
       DNS_TIMEOUT_SECONDS = 2
+      # The broadest prefix a source may publish: a wider one, or one outside the public unicast space, is a broken
+      # or compromised source, never a crawler's range.
+      MIN_PREFIX_LENGTH_BY_FAMILY = {Socket::AF_INET => 12, Socket::AF_INET6 => 24}.freeze
+      # Multicast and reserved: 224.0.0.0/3 (with 240.0.0.0/4 and the broadcast address), ff00::/8.
+      NON_UNICAST_BY_FAMILY = {Socket::AF_INET => IPAddr.new("224.0.0.0/3"), Socket::AF_INET6 => IPAddr.new("ff00::/8")}
+        .freeze
 
       # The owner whose crawler the lowercase user agent claims to be.
       def self.owner(ua)
@@ -114,7 +122,10 @@ module Browser
       def self.fetch
         SOURCES.to_h do |owner, source|
           addresses = source[:urls].flat_map { |url| fetch_prefixes(url) }.map do |prefix|
-            IPAddr.new(prefix)
+            address = IPAddr.new(prefix)
+            raise Error, "#{owner}: implausible prefix #{prefix.inspect}" unless plausible?(address)
+
+            address
           rescue ArgumentError
             raise Error, "#{owner}: invalid prefix #{prefix.inspect}"
           end
@@ -135,18 +146,34 @@ module Browser
           end
           break unless response.is_a?(Net::HTTPRedirection)
 
-          uri = uri.merge(response["Location"])
+          raise Error, "#{url}: HTTP #{response.code} without a Location" unless response["Location"]
+
+          location = uri.merge(response["Location"])
+          # Only the owner's own host, over HTTPS, publishes its ranges.
+          raise Error, "#{url}: redirected to #{location}" unless location.is_a?(URI::HTTPS) && location.host == uri.host
+
+          uri = location
         end
         raise Error, "#{url}: HTTP #{response.code}" unless response.is_a?(Net::HTTPSuccess)
 
-        prefixes = JSON.parse(response.body).fetch("prefixes").map do |prefix|
-          prefix["ipv4Prefix"] || prefix["ipv6Prefix"]
-        end
-        raise Error, "#{url}: no prefixes" if prefixes.empty?
+        document = JSON.parse(response.body)
+        entries = document.fetch("prefixes") if document.is_a?(Hash)
+        raise Error, "#{url}: no prefixes" unless entries.is_a?(Array) && entries.any?
 
-        prefixes
-      rescue JSON::ParserError, KeyError, Timeout::Error, IOError, SystemCallError, OpenSSL::SSL::SSLError => exception
+        entries.map do |entry|
+          prefix = entry["ipv4Prefix"] || entry["ipv6Prefix"] if entry.is_a?(Hash)
+          raise Error, "#{url}: invalid entry #{entry.inspect[0, 100]}" unless prefix.is_a?(String)
+
+          prefix
+        end
+      rescue JSON::ParserError, KeyError, URI::Error, Timeout::Error, IOError, SystemCallError, OpenSSL::SSL::SSLError => exception
         raise Error, "#{url}: #{exception.message}"
+      end
+
+      def self.plausible?(address)
+        address.prefix >= MIN_PREFIX_LENGTH_BY_FAMILY.fetch(address.family) && !address.to_i.zero? &&
+          !(address.private? || address.loopback? || address.link_local?) &&
+          !NON_UNICAST_BY_FAMILY.fetch(address.family).include?(address)
       end
 
       # Per owner and address family, the merged ranges as two sorted arrays of
@@ -188,7 +215,7 @@ module Browser
         nil
       end
 
-      private_class_method :fetch_prefixes, :build_ranges, :merge, :parse
+      private_class_method :fetch_prefixes, :plausible?, :build_ranges, :merge, :parse
     end
   end
 end

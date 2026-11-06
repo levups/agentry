@@ -52,6 +52,11 @@ class CloudflareTest < Minitest::Test
     assert_nil cloudflare("HTTP_X_BOT_SCORE" => "100").bot_score
   end
 
+  test "ignores a value longer than Cloudflare ever sends" do
+    assert_nil cloudflare("HTTP_X_BOT_CATEGORY" => "Search Engine Crawler #{"x" * 200}").bot_category
+    refute cloudflare("HTTP_X_BOT_VERIFIED" => "true#{" " * 200}").verified_bot?
+  end
+
   test "reads the header names a site chose" do
     Browser::Cloudflare.header_names = {verified_bot: "X-Edge-Good-Bot", bot_score: "X-Edge-Score"}
 

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "net/http"
 require "resolv"
 
 class VerifiedBotsTest < Minitest::Test
@@ -113,6 +114,13 @@ class VerifiedBotsTest < Minitest::Test
     end
   end
 
+  test "reverse DNS refuses a Google Cloud VM's googleusercontent.com name" do
+    with_dns({"34.1.2.3" => "3.2.1.34.bc.googleusercontent.com"},
+      "3.2.1.34.bc.googleusercontent.com" => [Resolv::IPv4.create("34.1.2.3")]) do
+      refute Browser.new(GOOGLEBOT).bot.verified?("34.1.2.3", reverse_dns: true)
+    end
+  end
+
   test "reverse DNS is not tried for owners that document none" do
     with_dns({"132.196.87.1" => "anything.openai.com"}, "anything.openai.com" => [Resolv::IPv4.create("132.196.87.1")]) do
       refute Browser.new(GPTBOT).bot.verified?("132.196.87.1", reverse_dns: true)
@@ -134,6 +142,73 @@ class VerifiedBotsTest < Minitest::Test
 
     assert Browser.new(GOOGLEBOT).bot.verified?("192.0.2.1")
     refute Browser.new(GOOGLEBOT).bot.verified?("66.249.66.1")
+  end
+
+  def with_responses(responses)
+    requested = []
+    original_start = Net::HTTP.method(:start)
+    Net::HTTP.define_singleton_method(:start) do |host, *, **, &block|
+      http = Object.new
+      http.define_singleton_method(:get) do |path, _headers|
+        requested << "#{host}#{path}"
+        responses.shift
+      end
+      block.call(http)
+    end
+    yield requested
+  ensure
+    Net::HTTP.define_singleton_method(:start, original_start)
+  end
+
+  def response(status, body: nil, location: nil)
+    klass = Net::HTTPResponse::CODE_TO_OBJ.fetch(status.to_s)
+    klass.new("1.1", status.to_s, "").tap do |response|
+      response["Location"] = location if location
+      response.instance_variable_set(:@body, body)
+      response.instance_variable_set(:@read, true)
+    end
+  end
+
+  def fetch_prefixes(url)
+    IP_RANGES.send(:fetch_prefixes, url)
+  end
+
+  test "fetch follows a redirect on the owner's host" do
+    body = JSON.generate(prefixes: [{ipv4Prefix: "66.249.64.0/27"}, {ipv6Prefix: "2001:4860:4801:10::/64"}])
+    with_responses([response(301, location: "/new.json"), response(200, body:)]) do |requested|
+      assert_equal ["66.249.64.0/27", "2001:4860:4801:10::/64"], fetch_prefixes("https://example.com/old.json")
+      assert_equal ["example.com/old.json", "example.com/new.json"], requested
+    end
+  end
+
+  test "fetch refuses a redirect to another host or to plain HTTP" do
+    ["https://example.org/ranges.json", "http://example.com/ranges.json", nil].each do |location|
+      with_responses([response(302, location:)]) do
+        assert_raises(Browser::Error) { fetch_prefixes("https://example.com/ranges.json") }
+      end
+    end
+  end
+
+  test "fetch refuses a malformed document" do
+    ["[]", "{}", '{"prefixes": []}', '{"prefixes": ["66.249.64.0/27"]}', '{"prefixes": [{"ipv4Prefix": 1}]}',
+      "not json"].each do |body|
+      with_responses([response(200, body:)]) do
+        assert_raises(Browser::Error, body) { fetch_prefixes("https://example.com/ranges.json") }
+      end
+    end
+  end
+
+  test "fetch refuses a prefix no crawler could own" do
+    original_fetch_prefixes = IP_RANGES.method(:fetch_prefixes)
+    %w[0.0.0.0/0 8.0.0.0/8 10.0.0.0/8 127.0.0.0/8 169.254.0.0/16 224.0.0.0/4 ::/0 2001::/16 fc00::/7 fe80::/10
+      ff02::/16].each do |prefix|
+      IP_RANGES.define_singleton_method(:fetch_prefixes) { |_url| ["66.249.64.0/27", prefix] }
+
+      assert_raises(Browser::Error, prefix) { IP_RANGES.fetch }
+    end
+  ensure
+    IP_RANGES.define_singleton_method(:fetch_prefixes, original_fetch_prefixes)
+    IP_RANGES.singleton_class.send(:private, :fetch_prefixes)
   end
 
   test "refresh keeps the current ranges when a source fails" do
