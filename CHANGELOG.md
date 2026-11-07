@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [3.1.1] — 2026-11-07
+
+Crafted request headers can no longer grow a process for good or make it raise.
+
+**Fixed**
+- Version checks no longer fill RubyGems' process-wide `Gem::Version` cache: 20,000 user agents with unique macOS
+  versions grew a process by 200 MB.
+- An Accept-Language header listing more than 32 languages is parsed on each request instead of cached: 1,000 such
+  headers held 107 MB.
+- Bytes that are not valid UTF-8 in the user agent or the Accept-Language header become U+FFFD instead of raising
+  `ArgumentError`, and such client hints and Cloudflare headers are ignored.
+- `Browser.new` checks the size of the user agent before reading it, so an oversized one is rejected in microseconds.
+
 ## [3.1.0] — 2026-11-06
 
 A Google Cloud VM no longer passes as a verified Googlebot, and a forged Googlebot can no longer stall requests on reverse DNS.
@@ -100,7 +113,8 @@ First release, forked from browser 6.2.0 (`dd88933`). Same API: `gem "agentry"` 
 - A corpus of 20,328 user agents, with snapshot and diff scripts proving answers match upstream, and a
   request benchmark.
 
-[Unreleased]: https://github.com/levups/agentry/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/levups/agentry/compare/v3.1.1...HEAD
+[3.1.1]: https://github.com/levups/agentry/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/levups/agentry/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/levups/agentry/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/levups/agentry/compare/v2.0.0...v2.1.0
