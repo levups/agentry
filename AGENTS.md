@@ -1,11 +1,10 @@
 # Agentry
 
 A fork of [fnando/browser](https://github.com/fnando/browser) (MIT, dormant since June 2025). `gem "agentry"`
-replaces `gem "browser"` without touching a call site, but is faster, keeps its bot list fresh and adds signals: bot
+replaces `gem "browser"` without touching a call site, and is faster, keeps its bot list fresh and adds signals: bot
 categories, verified crawler IPs, Cloudflare headers, Client Hints. The roadmap is in the GitHub issues.
 
-Read `README.md` for usage, `STYLE.md` for code style and `CONTRIBUTING.md` for contributions; this file only
-adds what they leave out.
+`README.md` covers usage, `STYLE.md` code style, `CONTRIBUTING.md` contributions; this file adds what they leave out.
 
 ## Commands
 
@@ -27,20 +26,19 @@ CI also runs `ruby-head`, `jruby-head` and `truffleruby-head`, the corpus diff a
 - The API stays 1:1 with browser: `Browser.new(ua, accept_language:)`, every predicate and every `require` path keep
   working. New features are additions (`bot.category`), never changed meanings. Upstream's tests stay unmodified;
   new behaviour gets new tests.
-- A change not meant to change an answer proves it with the corpus diff over the user agents in `corpus/`. A change
-  meant to change answers (a fresher bot list) records the differences it expects in
-  `corpus/expected_differences.jsonl` with `--write`.
-- The numbers in `docs/*.html` sit between `<!-- render:name -->` markers and come from `docs/*.json`, the bot
-  lists and the expected differences. Never type one by hand: CI fails when a page differs from what
-  `rake docs:render` writes. A new code block needs `rake docs:highlight`.
-- `crawler-user-agents` calls "bot" anything that is not a human browser, including test drivers (Playwright,
-  Selenium), scripts (`curl`) and scanners. Keep the categories apart: `browser_automation` never makes `bot?` true,
+- A change not meant to change an answer proves it with the corpus diff over the user agents in `corpus/`. One meant
+  to (a fresher bot list) records the differences it expects in `corpus/expected_differences.jsonl` with `--write`.
+- The numbers in `docs/*.html` sit between `<!-- render:name -->` markers and come from `docs/*.json`, the bot lists
+  and the expected differences. Never type one: CI fails when a page differs from what `rake docs:render` writes. A
+  new code block needs `rake docs:highlight`.
+- `crawler-user-agents` calls "bot" anything that is not a human browser, test drivers (Playwright, Selenium),
+  scripts (`curl`) and scanners included. Keep the categories apart: `browser_automation` never makes `bot?` true,
   or apps using Agentry would flag their own system tests. `script/sync_bots.rb` skips keywords that would flag a
   corpus browser (`IGNORED_KEYWORDS`).
 - `bots.yml` is curated above its marker line and rewritten by `script/sync_bots.rb` below it: edit above, or the
   next sync drops your change.
-- The `*.yml` at the root are the sources; the gem reads `data/*.json`, built from them. After editing a `.yml`, run
-  `script/build_data.rb`: `DataTest` fails on a stale JSON.
+- The root `*.yml` are the sources; the gem reads `data/*.json`, built from them by `script/build_data.rb`, to run
+  after editing a `.yml`: `DataTest` fails on a stale JSON.
 - `lib/browser/testing.rb` reads `test/ua*.yml` at runtime, so those fixtures ship in the gem: keep them in
   `s.files`.
 - Data sources: only MIT or Apache 2.0 lists (credited in `corpus/SOURCES.md` and the README) and IP ranges the
@@ -59,33 +57,39 @@ This section and the next two read the same in super-slim, gamba, crumbly and ag
   with the reason. A pure performance change pins no internals in tests.
 - Test and bench data are anonymized: `alice`, `Post`, `example.com`.
 - Everything in the repository is in English (code, comments, commits, pull requests, issues, reviews, replies),
-  whatever the language of the conversation.
+  whatever the conversation's language.
 - No AI attribution in anything people read.
 
 ## Pull requests and issues
 
-- `main` takes no direct push. Every change, releases included, goes through a pull request that merges itself
-  once CI is green: `gh pr merge --auto --squash`.
-- Drafts run no CI. Confident in the change? Open it ready for review, auto-merge on. Not yet? Open a draft, then
-  `gh pr ready` when it needs CI.
-- Never edit `CHANGELOG.md` in a pull request: they would all conflict. It is written at release time.
-- Title: the change as a user sees it (for an issue, the finding), in plain words, under 70 characters.
-- Body, no headings: two short paragraphs, the problem then the change (for an issue, what to do); 3 to 5 bullets,
-  each opening with a **bold 2–4 word lead-in**; the proof (reproduction, tests, benchmarks) folded in one
-  `<details>`. Nothing the diff or CI already says.
-- Never hard-wrap a pull request, an issue or a comment: GitHub renders every line break. One line per paragraph
-  and per bullet.
+- `main` takes no direct push: every change, releases included, goes through a pull request that merges itself once
+  CI is green (`gh pr merge --auto --squash`).
+- Drafts run no CI. Confident: open it ready, auto-merge on. Not yet: a draft, then `gh pr ready` when it needs CI.
+- Never edit `CHANGELOG.md` in a pull request, they would all conflict: it is written at release time.
+- Title: the change as a user sees it (an issue: the finding), in plain words, under 70 characters.
+- Body, no headings: two short paragraphs, the problem then the change (an issue: what to do); 3 to 5 bullets, each
+  opening with a **bold 2–4 word lead-in**; the proof (reproduction, tests, benchmarks) folded in one `<details>`.
+  Nothing the diff or CI already says.
+- Never hard-wrap a pull request, an issue or a comment: GitHub renders every line break. One line per paragraph and
+  per bullet.
 
 ## Releases
 
-1. List the pull requests merged since the last tag: `git log --first-parent --oneline <tag>..origin/main`, then
-   `gh pr view <n>` for each.
-2. Write the release under `## [Unreleased]` in `CHANGELOG.md`, uncommitted: a one-sentence lede, then
-   **Breaking**, **New**, **Faster** (measured) and **Fixed**, only those with entries. One entry per change users
-   can see, written for them; CI, refactoring, docs and tests get none. No version, date or link: `bin/release`
-   adds them.
-3. Show it to the user. Then `bin/release patch|minor|major` (try `--dry-run` first) commits it through a pull
-   request, waits for the merge and tags it; the tag runs `.github/workflows/release.yml`, which publishes the gem.
+The user is needed twice: a working git signing key (the tag is signed) and one click approving the `release`
+environment on GitHub.
 
-RubyGems trusts only that workflow: never `gem push` from a machine, except the very first version of a new gem
-name. `bin/release` and `release.yml` are the same in all four gems.
+1. Another session may have just released: `git fetch --tags origin`, and `gh pr list --search "head:release/"`
+   must be empty. Unreleased changes: `git log --first-parent --oneline $(git describe --tags --abbrev=0 origin/main)..origin/main`,
+   then `gh pr view <n>` for each.
+2. Write the release under `## [Unreleased]` in `CHANGELOG.md`, uncommitted: a one-sentence lede, then **Breaking**,
+   **New**, **Faster** (measured), **Fixed**, only those with entries. One entry per change users see, written for
+   them; CI, refactoring, docs and tests get none. No version, date or link: `bin/release` adds them.
+3. Show it to the user, wait for their go. From `main` level with `origin/main`, `CHANGELOG.md` its only change:
+   `bin/release minor --dry-run`, then `bin/release minor --yes` (or `patch`, `major`). It opens `release/vX.Y.Z`,
+   waits for it to merge itself, pushes the signed tag. Signing fails: the user fixes it, never an unsigned tag.
+   Interrupted after the merge: `bin/release --tag X.Y.Z`.
+4. The tag runs `release.yml`, which waits for the user to approve the `release` environment (the run's Review
+   deployments), then publishes to RubyGems and GitHub. Tell the user, then check RubyGems.
+
+RubyGems trusts only that workflow: never `gem push`, except a new gem name's first version. `bin/release` and
+`release.yml` are identical in all four gems.
