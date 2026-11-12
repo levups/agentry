@@ -110,6 +110,7 @@ ai_agent:
 - aranet-searchbot
 - cartai agentic commerce
 - chatgpt agent
+- claude-agent
 - claude-code
 - claude-web
 - crawl4ai

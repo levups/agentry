@@ -525,6 +525,7 @@ citeseerxbot: citeseerxbot
 citoid: Citoid
 claritybot/: ClarityBot
 classla-web: CLASSLA-web
+claude-agent: Claude-Agent
 claude-code: Claude-Code
 claude-searchbot: Claude-SearchBot
 claude-user: Claude-User
