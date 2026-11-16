@@ -38,7 +38,7 @@
       <div>
         <p class="summary">Agentry is a Ruby gem that reads the <code>User-Agent</code> header, the line of text every browser and crawler sends with a request, and tells you the browser, the operating system, the device or the bot behind it. It is a fork of the browser gem: the same API, faster, with a bot list updated every week.</p>
         <!-- render:lede -->
-        <p class="summary">25 µs per request instead of 126 µs with browser, 2.0 µs once a user agent was seen (YJIT). Of the 882 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out), browser misses 353 and Agentry 11.</p>
+        <p class="summary">25 µs per request instead of 126 µs with browser, 2.0 µs once a user agent was seen (YJIT). Of the 883 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out), browser misses 354 and Agentry 11.</p>
         <!-- /render:lede -->
         <code class="install">gem "agentry"</code>
         <p class="links"><a href="guide.html">Guide</a><a href="guide.html#migrating">Coming from browser</a><a href="bots.html">Bots</a></p>
@@ -79,7 +79,7 @@
       <div class="tiles">
       <div class="tile"><span class="tile-value">25 µs</span><span class="tile-label">per request</span><span class="tile-detail">instead of 126 µs with browser 6.2.0, on 2,000 distinct user agents</span></div>
       <div class="tile"><span class="tile-value">2.0 µs</span><span class="tile-label">for a repeated user agent</span><span class="tile-detail">instead of 114 µs: detection is cached per user agent</span></div>
-      <div class="tile"><span class="tile-value">353</span><span class="tile-label">recent crawlers browser misses</span><span class="tile-detail">of the 882 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out); Agentry misses 11</span></div>
+      <div class="tile"><span class="tile-value">354</span><span class="tile-label">recent crawlers browser misses</span><span class="tile-detail">of the 883 crawler user agents added to crawler-user-agents since 2024 (test drivers and scanners left out); Agentry misses 11</span></div>
       </div>
       <p class="note more">Ruby 4.0.9, Apple M4 Max, measured on 2026-11-04: browser 6.2.0 at <code>dd88933</code>, Agentry 1.0.0 at <code>e8bdc86</code>. Each figure is the median of 7 runs. YJIT on.</p>
       <!-- /render:numbers -->
