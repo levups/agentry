@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentry Migration</title>
+<meta name="description" content="Move from the browser gem, or from Agentry 3, to Agentry 4: what changes on its own, the names to rename, a prompt for a coding agent, and how to go back.">
+<link rel="canonical" href="https://levups.github.io/agentry/migration.html">
+<meta property="og:title" content="Agentry Migration">
+<meta property="og:description" content="Move from the browser gem, or from Agentry 3, to Agentry 4: what changes on its own, the names to rename, a prompt for a coding agent, and how to go back.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://levups.github.io/agentry/migration.html">
+<meta property="og:site_name" content="Level UP Solutions">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#0b7a6f">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Inter+Tight:wght@400;600&family=Fira+Code&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to content</a>
+<div class="page">
+  <nav class="site-nav" aria-label="Site">
+    <a class="brand" href="./">Agentry</a>
+    <a href="guide.html">Guide</a>
+    <a href="migration.html" aria-current="page">Migration</a>
+    <a href="bots.html">Bots</a>
+    <a href="benchmarks.html">Benchmarks</a>
+    <a href="https://github.com/levups/agentry">GitHub</a>
+  </nav>
+
+  <main id="content">
+    <header>
+      <h1 class="page-title">Migration</h1>
+      <p class="lede">Switching is one line of the Gemfile. Renaming to <code>Agentry</code> can wait until Agentry 5, and a coding agent can do it for you.</p>
+      <ul class="toc">
+        <li><a href="#from-browser">From browser</a></li>
+        <li><a href="#names">Moving to the Agentry names</a></li>
+        <li><a href="#from-agentry-3">From Agentry 3</a></li>
+        <li><a href="#coding-agent">With a coding agent</a></li>
+        <li><a href="#going-back">Going back</a></li>
+        <li><a href="#agentry-5">Agentry 5</a></li>
+      </ul>
+    </header>
+
+    <section id="from-browser" aria-labelledby="from-browser-title">
+      <h2 id="from-browser-title">From browser</h2>
+      <div class="prose">
+        <p>Change one line of the Gemfile, nothing else:</p>
+<pre><code class="language-diff"><span class="gd">- gem "browser"
+</span><span class="gi">+ gem "agentry"</span></code></pre>
+        <p>Agentry 4 still answers to the names browser used: <code>require "browser"</code>, <code>require "browser/aliases"</code> or <code>require: "browser/browser"</code> keep the meaning they had, define <code>Browser</code> as another name for <code>Agentry</code>, and the <code>browser</code> helper of Rails controllers and views still answers. They are deprecated, so <a href="#names">move to the new names</a> when you can. Agentry is forked from browser 6.2.0 (<code>dd88933</code>), and every pull request diffs its answers against that version on the 20,328 user agents of <a href="bots.html#corpus">the corpus</a>.</p>
+
+        <h3>What changes on its own</h3>
+        <ul>
+          <!-- render:switch-day -->
+          <li><strong>More bots, from the day you switch.</strong> 600 user agents of the corpus that browser took for humans are bots for Agentry: AI crawlers and assistants (<code>meta-externalagent</code>, <code>Perplexity-User</code>, <code>Claude-User</code>), ad and SEO crawlers, monitors, feed readers, scanners. Analytics that leave bots out count fewer visitors from that day, and anything gated by <code>bot?</code> (a session, a captcha, a cache) treats them as bots. Note the date of the switch next to your traffic charts. <a href="bots.html#coverage">Coverage per category</a>.</li>
+          <li><strong>Names for bots.</strong> 792 user agents that browser named <code>Generic Bot</code> get the name of their bot. No name browser gave changes.</li>
+          <!-- /render:switch-day -->
+          <li><strong>Client Hints in Rails.</strong> The Rails helper and the middleware also read the Client Hints Chromium sends with every request. They only move an answer when they contradict the user agent: Chrome for Android asking for the desktop site becomes an Android tablet instead of a Linux desktop. Without the hints (<code>Agentry.new(user_agent, accept_language:)</code>, Safari, Firefox), nothing moves. See <a href="guide.html#client-hints">Client Hints</a>.</li>
+          <li><strong>Nothing else.</strong> No bot stops being one, and no browser, platform or device answer moves for a user agent alone. Test drivers (HeadlessChrome, Playwright, Puppeteer, Selenium) stay out of <code>bot?</code>, so the system tests of an app see what they saw.</li>
+          <li><strong>A cache, on by default.</strong> Each process keeps the detection of its last 1,000 distinct user agents, about 1 MB. It empties itself when a matcher list or the bot list changes, so code that edits them keeps working.</li>
+        </ul>
+
+        <h3>What you can add</h3>
+        <ul>
+          <li><code>Agentry.cache_size = 5_000</code> to keep more user agents, <code>0</code> to turn the cache off. See <a href="guide.html#options">Options</a>.</li>
+          <li><code>agentry.bot.category</code>, <code>bot.ai?</code> and <code>bot.user_triggered?</code>, to tell an AI crawler from a search engine, a scanner or an assistant fetching a page for a person. See <a href="bots.html#categories">Categories</a>.</li>
+          <li><code>agentry.bot.verified?(request.remote_ip)</code>, to tell a real Googlebot (or Bing, OpenAI, Apple, Perplexity, DuckDuckGo crawler) from one that only claims to be. See <a href="guide.html#verified-crawlers">Verified crawlers</a>.</li>
+          <li><code>agentry.cloudflare</code>, to read the verified bot flag, category, bot score and country Cloudflare knows, through a Transform Rule. See <a href="guide.html#cloudflare">Cloudflare</a>.</li>
+          <li>An <code>Accept-CH: Sec-CH-UA-Platform-Version</code> response header, so that <code>agentry.platform.windows11?</code> and the macOS and Android versions come from Chromium’s Client Hints. See <a href="guide.html#client-hints">Client Hints</a>.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="names" aria-labelledby="names-title">
+      <h2 id="names-title">Moving to the Agentry names</h2>
+      <div class="table-scroll">
+        <table class="options">
+          <thead><tr><th scope="col">browser, deprecated in Agentry 4</th><th scope="col">Agentry</th></tr></thead>
+          <tbody>
+            <tr><td><code>gem "browser"</code>, <code>require "browser"</code></td><td><code>gem "agentry"</code>, <code>require "agentry"</code></td></tr>
+            <tr><td><code>require: "browser/browser"</code> (without Rails)</td><td><code>require: "agentry/agentry"</code></td></tr>
+            <tr><td><code>require "browser/aliases"</code>, <code>"browser/testing"</code>, <code>"browser/rails"</code></td><td><code>require "agentry/aliases"</code>, <code>"agentry/testing"</code>, <code>"agentry/rails"</code></td></tr>
+            <tr><td><code>Browser.new(…)</code>, <code>Browser::Bot</code>, <code>Browser::Middleware</code>…</td><td><code>Agentry.new(…)</code>, <code>Agentry::Bot</code>, <code>Agentry::Middleware</code>…</td></tr>
+            <tr><td>the <code>browser</code> helper, <code>browser</code> in a middleware block</td><td><code>agentry</code></td></tr>
+            <tr><td><code>config.browser</code></td><td><code>config.agentry</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prose">
+        <p>Each old name warns once per process, only where Ruby shows deprecations. Run the test suite with them shown to list what is left:</p>
+<pre><code class="language-shell"><span class="nv">RUBYOPT</span><span class="o">=</span><span class="nt">-W</span>:deprecated bin/rails <span class="nb">test
+</span>git <span class="nb">grep</span> <span class="nt">-nE</span> <span class="s1">'Browser(::|\.new)|require.*"browser|\bbrowser\.'</span></code></pre>
+        <p>The grep also finds a local variable named <code>browser</code>: it can keep its name, only the helper call becomes <code>agentry</code>. Names that merely contain the word (<code>SamsungBrowser</code>, <code>:browser_automation</code>) are not old names. Since <code>require "agentry"</code> defines no <code>Browser</code>, Agentry loads next to the browser gem, for example while a dependency still needs browser; only the <code>browser/*</code> paths refuse to, as both gems would define <code>Browser</code>.</p>
+      </div>
+    </section>
+
+    <section id="from-agentry-3" aria-labelledby="from-agentry-3-title">
+      <h2 id="from-agentry-3-title">From Agentry 3</h2>
+      <div class="prose">
+        <p>Only the names change; every answer is the one Agentry 3 gave. One thing breaks: <code>require "agentry"</code> no longer defines <code>Browser</code>. An app with a bare <code>gem "agentry"</code> line that calls <code>Browser</code> either renames those calls to <code>Agentry</code> (see <a href="#names">the table</a>), or keeps them a while longer with <code>gem "agentry", require: "browser"</code>. An app that already requires a <code>browser/*</code> path sees no change but the deprecation warnings.</p>
+      </div>
+    </section>
+
+    <section id="coding-agent" aria-labelledby="coding-agent-title">
+      <h2 id="coding-agent-title">With a coding agent</h2>
+      <div class="prose">
+        <p>The renaming is mechanical, which suits a coding agent such as Claude Code, Codex or Cursor. Paste this prompt in the app’s repository, then review the diff it leaves:</p>
+<pre><code class="language-plaintext">Migrate this app from the browser gem (or Agentry 3) to Agentry 4 without changing its behavior.
+Rules: https://levups.github.io/agentry/migration.html#names
+
+1. In the Gemfile, replace gem "browser" with gem "agentry" (keep any require: option, renamed as below), then run bundle install.
+2. Rename the old names to the new ones:
+   - require "browser" -&gt; require "agentry"; "browser/browser" -&gt; "agentry/agentry";
+     "browser/aliases", "browser/testing", "browser/rails" -&gt; "agentry/aliases", "agentry/testing", "agentry/rails".
+   - The Browser constant -&gt; Agentry: Browser.new, Browser::Bot, Browser::Middleware, Browser.cache_size...
+   - In Rails controllers, views, helpers and Agentry::Middleware blocks, calls to the browser helper -&gt; agentry.
+   - config.browser -&gt; config.agentry.
+3. Leave alone: local variables or methods the app itself names browser (only calls to the gem's helper change),
+   names that merely contain the word (SamsungBrowser, :browser_automation, "Samsung Browser"),
+   fixtures, recorded data, translations and comments that talk about web browsers.
+4. Run the test suite with RUBYOPT=-W:deprecated. Fix each "[agentry] ... deprecated" warning it prints, and run it again
+   until none is left and the suite is as green as before.
+5. Grep for leftovers: git grep -nE 'Browser(::|\.new)|require.*"browser|\bbrowser\.' and check each hit by hand.
+6. Do not change any answer the app relies on, add features or refactor. Show me the diff and the list of files you changed.</code></pre>
+      </div>
+    </section>
+
+    <section id="going-back" aria-labelledby="going-back-title">
+      <h2 id="going-back-title">Going back</h2>
+      <div class="prose">
+        <p>Remove the calls to what browser does not have (<code>cache_size=</code>, the <code>headers:</code> argument, <code>bot.category</code>, <code>bot.ai?</code>, <code>bot.user_triggered?</code>, <code>bot.verified?</code>, <code>cloudflare</code>), or they raise <code>NoMethodError</code>. Bring back the browser names of <a href="#names">the table</a>, then put <code>gem "browser"</code> back in place of <code>gem "agentry"</code>. The bots of the weekly sync go back to being humans, so the analytics shift reverses on that day.</p>
+      </div>
+    </section>
+
+    <section id="agentry-5" aria-labelledby="agentry-5-title">
+      <h2 id="agentry-5-title">Agentry 5</h2>
+      <div class="prose">
+        <p>Agentry 5 removes every old name of <a href="#names">the table</a>: the <code>browser/*</code> require paths, the <code>Browser</code> constant, the <code>browser</code> helper, <code>browser</code> in a middleware block and <code>config.browser</code>. An app whose test suite prints no <code>[agentry]</code> deprecation under <code>RUBYOPT=-W:deprecated</code> upgrades without a change.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="family">
+    <p>Gems by <a href="https://github.com/levups">Level UP Solutions</a></p>
+    <nav aria-label="Level UP Solutions gems">
+      <ul>
+        <li><a href="https://levups.github.io/super-slim/">SuperSlim</a></li>
+        <li><a href="https://levups.github.io/agentry/" aria-current="page">Agentry</a></li>
+        <li><a href="https://levups.github.io/gamba/">Gamba</a></li>
+        <li><a href="https://levups.github.io/crumbly/">Crumbly</a></li>
+        <li><a href="https://levups.github.io/maptain/">Maptain</a></li>
+      </ul>
+    </nav>
+    <p><a href="https://github.com/levups/agentry">Source on GitHub</a></p>
+    <p>MIT license, originally written by Nando Vieira as <a href="https://github.com/fnando/browser">browser</a></p>
+  </footer>
+</div>
+</body>
+</html>

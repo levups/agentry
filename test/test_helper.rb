@@ -10,14 +10,15 @@ require "bundler/setup"
 require "logger"
 require "minitest/autorun"
 require "minitest/utils"
-require "browser"
-require "browser/testing"
+require "agentry"
+require "agentry/testing"
+require "browser" # upstream's tests, unmodified, call Browser
 require "yaml"
 
 module Minitest
   class Test
     setup do
-      Browser::Bot.instance_variable_set(:@detect_empty_ua, false)
+      Agentry::Bot.instance_variable_set(:@detect_empty_ua, false)
     end
 
     def assert_deprecated(message, file, line, &block)
@@ -28,8 +29,8 @@ module Minitest
   end
 end
 
-# Override Browser::Base#warn, so we don't output deprecation messages.
-module Browser
+# Override Agentry::Base#warn, so we don't output deprecation messages.
+module Agentry
   class Base
     def warn(*)
     end

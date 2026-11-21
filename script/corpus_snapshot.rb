@@ -51,7 +51,7 @@ File.foreach(user_agents_path, chomp: true) do |user_agent|
   owner_classes = browser_classes.select { |klass| browser.is_a?(klass) }
   row = {
     ua: user_agent,
-    class: browser.class.name,
+    class: browser.class.name.delete_prefix("#{Browser.name}::"), # Agentry 4 renames the namespace
     browser: answers(browser, callable_methods(browser.class, owner_classes)),
     meta: browser.meta.sort,
     platform: answers(browser.platform,

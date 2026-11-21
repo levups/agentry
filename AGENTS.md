@@ -1,8 +1,8 @@
 # Agentry
 
-A fork of [fnando/browser](https://github.com/fnando/browser) (MIT, dormant since June 2025). `gem "agentry"`
-replaces `gem "browser"` without touching a call site, and is faster, keeps its bot list fresh and adds signals: bot
-categories, verified crawler IPs, Cloudflare headers, Client Hints. The roadmap is in the GitHub issues.
+A fork of [fnando/browser](https://github.com/fnando/browser) (MIT, dormant since June 2025), under its own name
+since 4.0: `Agentry`, `require "agentry"`, the `agentry` helper. It is faster, keeps its bot list fresh and adds
+signals: bot categories, verified crawler IPs, Cloudflare headers, Client Hints. The roadmap is in the GitHub issues.
 
 `README.md` covers usage, `STYLE.md` code style, `CONTRIBUTING.md` contributions; this file adds what they leave out.
 
@@ -23,9 +23,12 @@ CI also runs `ruby-head`, `jruby-head` and `truffleruby-head`, the corpus diff a
 
 ## Traps
 
-- The API stays 1:1 with browser: `Browser.new(ua, accept_language:)`, every predicate and every `require` path keep
-  working. New features are additions (`bot.category`), never changed meanings. Upstream's tests stay unmodified;
-  new behaviour gets new tests.
+- Every predicate keeps browser's meaning; new features are additions (`bot.category`). Until 5.0, browser's names
+  still work, deprecated: `lib/browser/*` requires and `lib/agentry/browser_constant.rb` (`Browser = Agentry`), the
+  `browser` helper, `browser` in a middleware block, `config.browser`. `require "agentry"` must never define
+  `Browser`: it loads next to the browser gem. Upstream's tests stay unmodified and call `Browser` through the shim
+  (`test_helper.rb`); ours and new tests call `Agentry`.
+- `script/corpus_snapshot.rb` and `bench/request.rb` run against upstream too, so they keep `require "browser"`.
 - A change not meant to change an answer proves it with the corpus diff over the user agents in `corpus/`. One meant
   to (a fresher bot list) records the differences it expects in `corpus/expected_differences.jsonl` with `--write`.
 - The numbers in `docs/*.html` sit between `<!-- render:name -->` markers and come from `docs/*.json`, the bot lists
@@ -39,7 +42,7 @@ CI also runs `ruby-head`, `jruby-head` and `truffleruby-head`, the corpus diff a
   next sync drops your change.
 - The root `*.yml` are the sources; the gem reads `data/*.json`, built from them by `script/build_data.rb`, to run
   after editing a `.yml`: `DataTest` fails on a stale JSON.
-- `lib/browser/testing.rb` reads `test/ua*.yml` at runtime, so those fixtures ship in the gem: keep them in
+- `lib/agentry/testing.rb` reads `test/ua*.yml` at runtime, so those fixtures ship in the gem: keep them in
   `s.files`.
 - Data sources: only MIT or Apache 2.0 lists (credited in `corpus/SOURCES.md` and the README) and IP ranges the
   crawlers' owners publish. Never embed matomo-org/device-detector (LGPL-3.0) or Cloudflare Radar's bots directory

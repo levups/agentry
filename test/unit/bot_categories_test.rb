@@ -20,12 +20,12 @@ class BotCategoriesTest < Minitest::Test
 
   SYSTEM_TEST_USER_AGENTS.each do |driver, user_agent|
     test "the system tests of #{driver} are not bots" do
-      refute Browser.new(user_agent).bot?
+      refute Agentry.new(user_agent).bot?
     end
   end
 
   test "headless Chrome is a test driver, not a bot" do
-    bot = Browser.new(SYSTEM_TEST_USER_AGENTS.fetch("Playwright Chromium")).bot
+    bot = Agentry.new(SYSTEM_TEST_USER_AGENTS.fetch("Playwright Chromium")).bot
 
     assert_equal :browser_automation, bot.category
     assert_nil bot.name
@@ -33,7 +33,7 @@ class BotCategoriesTest < Minitest::Test
   end
 
   test "a browser has no category" do
-    bot = Browser.new(Browser["CHROME"]).bot
+    bot = Agentry.new(Agentry["CHROME"]).bot
 
     assert_nil bot.category
     refute bot.ai?
@@ -41,11 +41,11 @@ class BotCategoriesTest < Minitest::Test
   end
 
   test "a bot exception has no category" do
-    assert_nil Browser.new("Pinterest/Android").bot.category
+    assert_nil Agentry.new("Pinterest/Android").bot.category
   end
 
   test "a bot caught by a keyword alone has no category" do
-    assert_nil Browser.new("some-bot").bot.category
+    assert_nil Agentry.new("some-bot").bot.category
   end
 
   {
@@ -68,7 +68,7 @@ class BotCategoriesTest < Minitest::Test
     "Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)" => [:scanner, "CensysInspect"]
   }.each do |user_agent, (category, name)|
     test "#{name} is a bot of category #{category}" do
-      bot = Browser.new(user_agent).bot
+      bot = Agentry.new(user_agent).bot
 
       assert bot.bot?
       assert_equal name, bot.name
@@ -77,36 +77,36 @@ class BotCategoriesTest < Minitest::Test
   end
 
   test "AI agents acting for a person are user-triggered" do
-    bot = Browser.new("Mozilla/5.0 (compatible; Claude-User/1.0)").bot
+    bot = Agentry.new("Mozilla/5.0 (compatible; Claude-User/1.0)").bot
 
     assert bot.ai?
     assert bot.user_triggered?
   end
 
   test "AI crawlers are not user-triggered" do
-    bot = Browser.new("Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)").bot
+    bot = Agentry.new("Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)").bot
 
     assert bot.ai?
     refute bot.user_triggered?
   end
 
   test "a search engine is not AI" do
-    refute Browser.new(Browser["GOOGLE_BOT"]).bot.ai?
+    refute Agentry.new(Agentry["GOOGLE_BOT"]).bot.ai?
   end
 
   test "every bots.yml keyword has at most one category" do
-    keywords = Browser::Bot.load_yaml("bot_categories.yml").values.flatten
+    keywords = Agentry::Bot.load_yaml("bot_categories.yml").values.flatten
 
     assert_equal keywords.uniq, keywords
   end
 
   test "extends the categories in runtime" do
-    Browser::Bot.bots["faraday"] = "Faraday"
-    Browser::Bot.category_by_keyword["faraday"] = :http_library
+    Agentry::Bot.bots["faraday"] = "Faraday"
+    Agentry::Bot.category_by_keyword["faraday"] = :http_library
 
-    assert_equal :http_library, Browser.new("Faraday v2.12.0").bot.category
+    assert_equal :http_library, Agentry.new("Faraday v2.12.0").bot.category
   ensure
-    Browser::Bot.bots.delete("faraday")
-    Browser::Bot.category_by_keyword.delete("faraday")
+    Agentry::Bot.bots.delete("faraday")
+    Agentry::Bot.category_by_keyword.delete("faraday")
   end
 end

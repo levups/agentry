@@ -24,26 +24,26 @@ class ClientHintsTest < Minitest::Test
   end
 
   setup do
-    Browser.cache_size = 1000
+    Agentry.cache_size = 1000
   end
 
   test "parses the brands, without the GREASE one" do
-    client_hints = Browser.new(WINDOWS_CHROME, headers: hints).client_hints
+    client_hints = Agentry.new(WINDOWS_CHROME, headers: hints).client_hints
 
     assert_equal({"Chromium" => "142", "Google Chrome" => "142"}, client_hints.version_by_brand)
   end
 
   test "parses the platform, its version and the mobile flag" do
-    client_hints = Browser::ClientHints.new(hints(platform: "macOS", platform_version: "15.1.0", mobile: "?0"))
+    client_hints = Agentry::ClientHints.new(hints(platform: "macOS", platform_version: "15.1.0", mobile: "?0"))
 
     assert_equal "macOS", client_hints.platform
     assert_equal "15.1.0", client_hints.platform_version
     assert_equal false, client_hints.mobile?
-    assert_equal true, Browser::ClientHints.new(hints(mobile: "?1")).mobile?
+    assert_equal true, Agentry::ClientHints.new(hints(mobile: "?1")).mobile?
   end
 
   test "answers nil for hints a browser did not send or malformed ones" do
-    client_hints = Browser::ClientHints.new(
+    client_hints = Agentry::ClientHints.new(
       "HTTP_SEC_CH_UA_MOBILE" => "yes", "HTTP_SEC_CH_UA_PLATFORM" => "Windows",
       "HTTP_SEC_CH_UA_PLATFORM_VERSION" => %("#{"1" * 600}")
     )
@@ -52,23 +52,23 @@ class ClientHintsTest < Minitest::Test
     assert_nil client_hints.platform
     assert_nil client_hints.platform_version
     assert_empty client_hints.version_by_brand
-    assert_nil Browser.new(WINDOWS_CHROME).client_hints.platform
+    assert_nil Agentry.new(WINDOWS_CHROME).client_hints.platform
   end
 
   test "ignores a hint that is not valid UTF-8" do
     invalid = hints(platform: "Windows\xFF", platform_version: "19.0.0\xFF", brands: "#{BRANDS}\xFF")
       .transform_values { |value| value.dup.force_encoding(Encoding::UTF_8) }
-    client_hints = Browser::ClientHints.new(invalid)
+    client_hints = Agentry::ClientHints.new(invalid)
 
     assert_empty client_hints.version_by_brand
     assert_nil client_hints.platform
     assert_nil client_hints.platform_version
-    refute Browser.new(WINDOWS_CHROME, headers: invalid).platform.windows11?
+    refute Agentry.new(WINDOWS_CHROME, headers: invalid).platform.windows11?
   end
 
   test "tells Windows 11 from Windows 10" do
-    windows11 = Browser.new(WINDOWS_CHROME, headers: hints(platform: "Windows", platform_version: "19.0.0")).platform
-    windows10 = Browser.new(WINDOWS_CHROME, headers: hints(platform: "Windows", platform_version: "10.0.0")).platform
+    windows11 = Agentry.new(WINDOWS_CHROME, headers: hints(platform: "Windows", platform_version: "19.0.0")).platform
+    windows10 = Agentry.new(WINDOWS_CHROME, headers: hints(platform: "Windows", platform_version: "10.0.0")).platform
 
     assert windows11.windows11?
     refute windows11.windows10?
@@ -79,8 +79,8 @@ class ClientHintsTest < Minitest::Test
   end
 
   test "takes the platform version from the hints" do
-    mac = Browser.new(MAC_CHROME, headers: hints(platform: "macOS", platform_version: "15.1.0")).platform
-    android = Browser.new(ANDROID_CHROME, headers: hints(platform: "Android", platform_version: "15.0.0")).platform
+    mac = Agentry.new(MAC_CHROME, headers: hints(platform: "macOS", platform_version: "15.1.0")).platform
+    android = Agentry.new(ANDROID_CHROME, headers: hints(platform: "Android", platform_version: "15.0.0")).platform
 
     assert_equal "15.1.0", mac.version
     assert mac.mac?(">= 15")
@@ -90,26 +90,26 @@ class ClientHintsTest < Minitest::Test
 
   test "takes the platform and the mobile flag from the hints" do
     # Chrome for Android's "desktop site" sends a desktop Linux user agent.
-    browser = Browser.new(LINUX_CHROME, headers: hints(platform: "Android", mobile: "?0"))
+    browser = Agentry.new(LINUX_CHROME, headers: hints(platform: "Android", mobile: "?0"))
 
     assert browser.platform.android?
     assert browser.device.tablet?
     refute browser.device.mobile?
-    assert Browser.new(LINUX_CHROME, headers: hints(platform: "Linux", mobile: "?1")).device.mobile?
+    assert Agentry.new(LINUX_CHROME, headers: hints(platform: "Linux", mobile: "?1")).device.mobile?
   end
 
   test "falls back on the user agent without hints" do
-    browser = Browser.new(WINDOWS_CHROME, headers: {})
+    browser = Agentry.new(WINDOWS_CHROME, headers: {})
 
     assert browser.platform.windows10?
     refute browser.platform.windows11?
     assert_equal "10.0", browser.platform.version
-    refute Browser.new(MAC_CHROME, headers: hints(platform: "Fuchsia", platform_version: "1.0")).platform.windows?
+    refute Agentry.new(MAC_CHROME, headers: hints(platform: "Fuchsia", platform_version: "1.0")).platform.windows?
   end
 
   test "keeps the user agent's cached platform and device when the hints agree with it" do
-    plain = Browser.new(ANDROID_CHROME)
-    hinted = Browser.new(ANDROID_CHROME, headers: hints(platform: "Android", mobile: "?1"))
+    plain = Agentry.new(ANDROID_CHROME)
+    hinted = Agentry.new(ANDROID_CHROME, headers: hints(platform: "Android", mobile: "?1"))
 
     assert_same plain.platform, hinted.platform
     assert_same plain.device, hinted.device
@@ -118,10 +118,10 @@ class ClientHintsTest < Minitest::Test
   test "never caches an answer that depends on the hints" do
     windows11 = hints(platform: "Windows", platform_version: "19.0.0")
 
-    assert Browser.new(WINDOWS_CHROME, headers: windows11).platform.windows11?
-    refute Browser.new(WINDOWS_CHROME).platform.windows11?
-    assert Browser.new(WINDOWS_CHROME, headers: windows11).platform.windows11?
-    refute Browser.new(LINUX_CHROME, headers: hints(platform: "Linux", mobile: "?1")).device.tablet?
-    refute Browser.new(LINUX_CHROME).device.mobile?
+    assert Agentry.new(WINDOWS_CHROME, headers: windows11).platform.windows11?
+    refute Agentry.new(WINDOWS_CHROME).platform.windows11?
+    assert Agentry.new(WINDOWS_CHROME, headers: windows11).platform.windows11?
+    refute Agentry.new(LINUX_CHROME, headers: hints(platform: "Linux", mobile: "?1")).device.tablet?
+    refute Agentry.new(LINUX_CHROME).device.mobile?
   end
 end

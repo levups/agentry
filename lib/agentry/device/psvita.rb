@@ -1,0 +1,19 @@
+# frozen_string_literal: true
+
+module Agentry
+  class Device
+    class PSVita < Base
+      def id
+        :psvita
+      end
+
+      def name
+        "PlayStation Vita"
+      end
+
+      def match?
+        ua.include?("Playstation Vita")
+      end
+    end
+  end
+end

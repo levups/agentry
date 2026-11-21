@@ -1,3 +1,4 @@
 # frozen_string_literal: true
 
-require_relative "browser"
+require_relative "agentry/agentry"
+require_relative "agentry/rails" if defined?(Rails)

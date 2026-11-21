@@ -3,7 +3,7 @@
 # What the request signals cost on top of the user agent: client hints,
 # Cloudflare headers, and the verified crawler IP lookup.
 #   ruby [--yjit] -I lib bench/signals.rb
-require "browser"
+require "agentry"
 
 CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
          "Chrome/142.0.0.0 Safari/537.36"
@@ -20,12 +20,12 @@ CLOUDFLARE_HEADERS = {
 }.freeze
 
 def request(headers)
-  browser = Browser.new(CHROME, headers:)
+  browser = Agentry.new(CHROME, headers:)
   [browser.platform.name, browser.platform.version, browser.device.mobile?, browser.device.tablet?]
 end
 
 def cloudflare(headers)
-  cloudflare = Browser.new(GOOGLEBOT, headers:).cloudflare
+  cloudflare = Agentry.new(GOOGLEBOT, headers:).cloudflare
   [cloudflare.verified_bot?, cloudflare.bot_category, cloudflare.bot_score, cloudflare.country]
 end
 
@@ -47,9 +47,9 @@ measure("platform and device, low-entropy hints") { request(LOW_ENTROPY_HINTS) }
 measure("platform and device, Windows 11 hints") { request(WINDOWS_11_HINTS) }
 measure("Cloudflare headers") { cloudflare(CLOUDFLARE_HEADERS) }
 
-bot = Browser.new(GOOGLEBOT).bot
+bot = Agentry.new(GOOGLEBOT).bot
 measure("bot.verified?, Googlebot IPv4") { bot.verified?("66.249.66.1") }
 measure("bot.verified?, Googlebot IPv6") { bot.verified?("2001:4860:4801:10::1") }
 measure("bot.verified?, IPv4 outside the ranges") { bot.verified?("203.0.113.7") }
 measure("bot.verified?, invalid IP") { bot.verified?("not an IP") }
-measure("bot.verified?, a browser") { Browser.new(CHROME).bot.verified?("66.249.66.1") }
+measure("bot.verified?, a browser") { Agentry.new(CHROME).bot.verified?("66.249.66.1") }

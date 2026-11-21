@@ -1,29 +1,5 @@
 # frozen_string_literal: true
 
-require "yaml"
-
-module Browser
-  def self.user_agents
-    @user_agents ||= browser_user_agents
-      .merge(bot_user_agents)
-      .merge(search_engine_user_agents)
-  end
-
-  def self.browser_user_agents
-    @browser_user_agents ||= YAML.load_file(Browser.root.join("test/ua.yml"))
-  end
-
-  def self.bot_user_agents
-    @bot_user_agents ||= YAML.load_file(Browser.root.join("test/ua_bots.yml"))
-  end
-
-  def self.search_engine_user_agents
-    @search_engine_user_agents ||= YAML.load_file(
-      Browser.root.join("test/ua_search_engines.yml")
-    )
-  end
-
-  def self.[](key)
-    user_agents.fetch(key)
-  end
-end
+require_relative "../agentry/agentry"
+require_relative "../agentry/testing"
+require_relative "../agentry/browser_constant"
