@@ -110,6 +110,7 @@ ai_agent:
 - aranet-searchbot
 - cartai agentic commerce
 - chatgpt agent
+- claude-agent
 - claude-code
 - claude-web
 - crawl4ai
@@ -119,6 +120,7 @@ ai_agent:
 - iaskspider
 - kimi-agent
 - kunatocrawler
+- minimaxagent
 - novaact
 - opencode
 - payhawk invoice fetching agent
@@ -136,11 +138,14 @@ ai_assistant:
 - exauser
 - geisthaus-pagefetcher
 - gemini-deep-research
+- google-gemininotebook
 - googleagent-urlcontext
+- haiku-searchbot
 - henkbot
 - kagi-fetcher
 - kimi-user
 - klaviyoaibot
+- liner-user
 - linerbot
 - meta-externalfetcher
 - mistralai-user
@@ -587,6 +592,7 @@ monitoring_and_analytics:
 - rakuten image extraction bot
 - rigor)
 - ruxitsynthetic
+- scooterza
 - scouturlmonitor
 - sentinel-linkcheck
 - sentry/
