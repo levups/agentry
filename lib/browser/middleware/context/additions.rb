@@ -10,7 +10,9 @@ module Browser
 
         included do
           include Rails.application.routes.url_helpers
-          include UrlMethods
+          # url_helpers defines default_url_options on the class itself, which an
+          # included module cannot override.
+          prepend UrlMethods
         end
       end
     end
