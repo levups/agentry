@@ -68,9 +68,13 @@ module Agentry
 
   MIGRATION_GUIDE_URL = "https://levups.github.io/agentry/migration.html"
 
-  # Once per message, and only where Ruby shows deprecations (-W:deprecated, Warning[:deprecated] = true).
+  @deprecations = Set.new
+
+  # Once per message, and only where Ruby shows deprecations (-W:deprecated, Warning[:deprecated] = true): a
+  # message hidden when it first fires still prints once deprecations are shown.
   def self.deprecate(message)
-    @deprecations ||= Set.new
+    return unless Warning[:deprecated]
+
     warn("[agentry] #{message}, see #{MIGRATION_GUIDE_URL}", category: :deprecated) if @deprecations.add?(message)
   end
 

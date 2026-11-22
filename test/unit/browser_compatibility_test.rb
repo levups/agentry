@@ -20,6 +20,20 @@ class BrowserCompatibilityTest < Minitest::Test
     assert_empty errors
   end
 
+  {
+    "agentry/agentry" => 'Agentry.new("").name',
+    "agentry/aliases" => "Agentry::Aliases::DEVICE_ALIASES.size",
+    "agentry/testing" => 'Agentry["CHROME"]',
+    "agentry/rails" => 'Agentry.new("").name'
+  }.each do |path, call|
+    test "require #{path.inspect} alone is enough to call Agentry" do
+      _output, errors, status = run_ruby(%(require "#{path}"), call)
+
+      assert status.success?, errors
+      assert_empty errors
+    end
+  end
+
   test "loads next to the browser gem" do
     _output, errors, status = run_ruby(ACTIVATE_BROWSER_GEM, 'require "agentry"')
 

@@ -26,7 +26,7 @@ CI also runs `ruby-head`, `jruby-head` and `truffleruby-head`, the corpus diff a
 - Every predicate keeps browser's meaning; new features are additions (`bot.category`). Until 5.0, browser's names
   still work, deprecated: `lib/browser/*` requires and `lib/agentry/browser_constant.rb` (`Browser = Agentry`), the
   `browser` helper, `browser` in a middleware block, `config.browser`. `require "agentry"` must never define
-  `Browser`: it loads next to the browser gem. Upstream's tests stay unmodified and call `Browser` through the shim
+  `Browser`. Agentry 4 cannot share a bundle with the browser gem (same `lib/browser*` files). Upstream's tests stay unmodified and call `Browser` through the shim
   (`test_helper.rb`); ours and new tests call `Agentry`.
 - `script/corpus_snapshot.rb` and `bench/request.rb` run against upstream too, so they keep `require "browser"`.
 - A change not meant to change an answer proves it with the corpus diff over the user agents in `corpus/`. One meant

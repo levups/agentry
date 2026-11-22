@@ -20,14 +20,14 @@ class AgentryRailsTest < Minitest::Test
   def with_deprecations_shown
     shown = Warning[:deprecated]
     Warning[:deprecated] = true
-    Agentry.instance_variable_set(:@deprecations, nil)
+    Agentry.instance_variable_set(:@deprecations, Set.new)
     yield
   ensure
     Warning[:deprecated] = shown
   end
 
   test "controllers and views call agentry" do
-    _status, _headers, body = AgentryController.action(:show).call(CHROME_ENV)
+    _status, _headers, body = AgentryController.action(:show).call(CHROME_ENV.dup)
 
     assert_equal "Chrome", body.each.to_a.join
   end
@@ -58,7 +58,35 @@ class AgentryRailsTest < Minitest::Test
     assert_includes errors, "browser in an Agentry::Middleware block is deprecated"
   end
 
-  test "config.browser still reaches config.agentry" do
-    assert_same Rails.application.config.agentry, Rails.application.config.browser
+  test "config.browser still reaches config.agentry, once deprecated" do
+    options = nil
+    _out, errors = capture_io do
+      with_deprecations_shown { 2.times { options = Rails.application.config.browser.to_h } }
+    end
+
+    assert_equal Rails.application.config.agentry.to_h, options
+    assert_equal 1, errors.scan("config.browser is deprecated").size
+  end
+
+  test "a @browser set for the browser gem's helper still answers" do
+    controller = AgentryController.new
+    controller.instance_variable_set(:@browser, Agentry.new(Agentry["IPHONE"]))
+
+    assert_predicate controller.send(:agentry).device, :iphone?
+  end
+
+  test "a deprecation hidden when it first fires prints once deprecations are shown" do
+    shown = Warning[:deprecated]
+    Agentry.instance_variable_set(:@deprecations, Set.new)
+    Warning[:deprecated] = false
+    Agentry.deprecate("alice is deprecated")
+    _out, errors = capture_io do
+      Warning[:deprecated] = true
+      Agentry.deprecate("alice is deprecated")
+    end
+
+    assert_includes errors, "alice is deprecated"
+  ensure
+    Warning[:deprecated] = shown
   end
 end

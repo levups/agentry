@@ -1,13 +1,22 @@
 # frozen_string_literal: true
 
+require "delegate"
 require "rails"
+require_relative "agentry"
 require_relative "action_controller"
 require_relative "middleware/context/additions"
 
 module Agentry
   class Railtie < Rails::Railtie
+    class BrowserConfig < SimpleDelegator
+      def method_missing(...) # rubocop:disable Style/MissingRespondToMissing -- Delegator's answers for the target
+        Agentry.deprecate("config.browser is deprecated and goes away in 5.0: use config.agentry")
+        super
+      end
+    end
+
     config.agentry = ActiveSupport::OrderedOptions.new
-    config.browser = config.agentry
+    config.browser = BrowserConfig.new(config.agentry)
     config.eager_load_namespaces << Agentry
 
     initializer "agentry" do

@@ -61,7 +61,7 @@
     <section id="migrating" aria-labelledby="migrating-title">
       <h2 id="migrating-title">Migrating from browser</h2>
       <div class="prose">
-        <p>Replace <code>gem "browser"</code> with <code>gem "agentry"</code>. Agentry 4 still answers to <code>Browser</code>, the <code>browser/*</code> require paths and the <code>browser</code> helper, deprecated until 5.0, so the app keeps running before you rename anything. What changes on its own (more bots from the first day), the table of names to move to <code>Agentry</code>, a prompt for a coding agent and how to go back are on the <a href="migration.html">migration page</a>.</p>
+        <p>Replace <code>gem "browser"</code> with <code>gem "agentry", require: "browser"</code>. Agentry 4 still answers to <code>Browser</code>, the <code>browser/*</code> require paths and the <code>browser</code> helper, deprecated until 5.0, so the app keeps running before you rename anything. What changes on its own (more bots from the first day), the table of names to move to <code>Agentry</code>, a prompt for a coding agent and how to go back are on the <a href="migration.html">migration page</a>.</p>
       </div>
     </section>
 

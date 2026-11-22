@@ -249,9 +249,11 @@ loads, which production does by default. Elsewhere, call `Agentry.eager_load!` b
 
 ## Switching from browser
 
-Replace `gem "browser"` with `gem "agentry"` in the Gemfile. Code written for browser keeps working on Agentry 4:
-the `browser/*` require paths still load, define `Browser` as another name for `Agentry`, and the `browser` helper
-still answers. They are deprecated and go away in Agentry 5, so move to the new names when you can:
+Replace `gem "browser"` with `gem "agentry", require: "browser"` in the Gemfile. Code written for browser keeps
+working on Agentry 4: the require paths browser documents (`browser`, `browser/browser`, `browser/aliases`) and
+`browser/testing`, `browser/rails` still load and define `Browser` as another name for `Agentry`, and the `browser`
+helper still answers. A bare `gem "agentry"` loads only the new names, so `Browser` raises `NameError`. The old
+names are deprecated and go away in Agentry 5, so move to the new ones when you can:
 
 | browser, deprecated in Agentry 4 | Agentry |
 |---|---|
@@ -265,8 +267,9 @@ still answers. They are deprecated and go away in Agentry 5, so move to the new 
 Each deprecation warns once per process, only where Ruby shows deprecations: run the tests with
 `RUBYOPT=-W:deprecated` to list what is left to move. The
 [migration guide](https://levups.github.io/agentry/migration.html) walks through the change, and gives a prompt
-for a coding agent to make it. Since `require "agentry"` defines no `Browser`, Agentry loads next to the browser
-gem; only the `browser/*` paths still refuse to, as both would define `Browser`.
+for a coding agent to make it. Class names change even where code keeps calling `Browser`: `browser.class.name`
+reads `Agentry::Chrome`. Agentry 4 ships the same `browser/*` files as the browser gem, so it cannot share a
+bundle with it, for example through a dependency that still needs browser; Agentry 5 drops those files.
 
 Some answers change from the day you switch, because of the fresher bot list: 600 user agents of the corpus that
 browser took for people are bots in Agentry, so analytics that leave bots out will count fewer visitors, and 792

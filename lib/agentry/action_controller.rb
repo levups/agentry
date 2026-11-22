@@ -11,7 +11,7 @@ module Agentry
     end
 
     private def agentry
-      @agentry ||= Agentry.new(
+      @agentry ||= @browser || Agentry.new( # @browser: set by apps and tests written for the browser gem
         request.headers["User-Agent"],
         accept_language: request.headers["Accept-Language"],
         headers: request.env
