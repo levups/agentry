@@ -8,6 +8,7 @@ class AgentryRailsTest < Minitest::Test
   CHROME_ENV = Rack::MockRequest.env_for("/", "HTTP_USER_AGENT" => Agentry["CHROME"], "HTTP_ACCEPT" => "text/html")
 
   class AgentryController < ActionController::Base
+    protect_from_forgery with: :exception
     def show
       render inline: "<%= agentry.name %>"
     end
