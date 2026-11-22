@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+## [4.0.0] — 2026-11-22
+
+Agentry answers under its own name: `Agentry` instead of `Browser`, browser's names kept as deprecated aliases until 5.0.
+
+**Breaking**
+- `require "agentry"` (a bare `gem "agentry"`) no longer defines `Browser`. To keep the old names a while longer, write `gem "agentry", require: "browser"`, or keep `require: "browser/browser"`. The [migration guide](https://levups.github.io/agentry/migration.html) lists every rename and gives a prompt for a coding agent.
+- Of the `browser/*` require paths, only `browser`, `browser/browser`, `browser/aliases`, `browser/testing` and `browser/rails` remain; others such as `browser/middleware` or `browser/version` raise `LoadError`.
+- Class names read `Agentry::Chrome`, `Agentry::Bot`…, even where code calls them through `Browser`, and the Railtie initializer is named `"agentry"`.
+- Agentry 4 refuses to load its `browser/*` paths next to the browser gem, since both define `Browser`: a bundle can't hold both until 5.0.
+
+**New**
+- `Agentry.new`, `Agentry::Bot`, `Agentry::Middleware`…, `require "agentry"`, the `agentry` helper in controllers, views and middleware blocks, and `config.agentry`.
+- browser's names (`Browser`, the `browser` helper, `browser` in a middleware block, `config.browser`) still work and warn once each under `RUBYOPT=-W:deprecated`.
+- `require "agentry/testing"` and `require "agentry/rails"` work on their own.
+
+**Fixed**
+- `config.agentry.default_url_options` reaches the url helpers of middleware blocks, which no longer raise when the app has no Action Mailer.
+
 ## [3.1.2] — 2026-11-22
 
 Six more bots recognized, and fresh IP ranges for verified Google, Bing and OpenAI crawlers.
@@ -124,7 +142,8 @@ First release, forked from browser 6.2.0 (`dd88933`). Same API: `gem "agentry"` 
 - A corpus of 20,328 user agents, with snapshot and diff scripts proving answers match upstream, and a
   request benchmark.
 
-[Unreleased]: https://github.com/levups/agentry/compare/v3.1.2...HEAD
+[Unreleased]: https://github.com/levups/agentry/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/levups/agentry/compare/v3.1.2...v4.0.0
 [3.1.2]: https://github.com/levups/agentry/compare/v3.1.1...v3.1.2
 [3.1.1]: https://github.com/levups/agentry/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/levups/agentry/compare/v3.0.0...v3.1.0
