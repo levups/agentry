@@ -94,7 +94,7 @@
       <div class="prose">
         <p>Each old name warns once per process, only where Ruby shows deprecations. Run the test suite with them shown to list what is left:</p>
 <pre><code class="language-shell"><span class="nv">RUBYOPT</span><span class="o">=</span><span class="nt">-W</span>:deprecated bin/rails <span class="nb">test
-</span>git <span class="nb">grep</span> <span class="nt">-nP</span> <span class="s1">'\bBrowser\b(::|\.|\[)|require.*"browser|@browser\b|\bbrowser\.|config\.browser'</span></code></pre>
+</span>git <span class="nb">grep</span> <span class="nt">-nP</span> <span class="s1">'\bBrowser\b(::|\.|\[)|require.*"browser|@browser\b|\(:browser\)|\bbrowser(\.|&amp;\.|\[)|config\.browser'</span></code></pre>
         <p>The grep also finds a local variable named <code>browser</code>: it can keep its name, only the helper call becomes <code>agentry</code>. Names that merely contain the word (<code>SamsungBrowser</code>, <code>:browser_automation</code>) are not old names. Three changes no warning shows: <code>@browser</code> becomes <code>@agentry</code> (the <code>agentry</code> helper ignores a <code>@browser</code> set to fake a device), class names read <code>Agentry::Chrome</code> even where code calls <code>Browser</code> (check <code>class.name</code> comparisons and marshalled objects), and the Railtie initializer is named <code>"agentry"</code>, so <code>before: "browser"</code> or <code>after: "browser"</code> no longer orders anything. Agentry 4 ships the same <code>browser/*</code> files as the browser gem, so it cannot share a bundle with it, for example through a dependency that still needs browser; Agentry 5 drops those files.</p>
       </div>
     </section>
@@ -122,12 +122,14 @@ Rules: https://levups.github.io/agentry/migration.html#names
    - config.browser -&gt; config.agentry.
    - The @browser instance variable the gem filled -&gt; @agentry, in controllers, views, tests
      (instance_variable_set(:@browser, ...), assigns(:browser)) and Agentry::Middleware blocks.
-3. Leave alone: local variables or methods the app itself names browser (only calls to the gem's helper change),
+   - Stubs of the browser helper in tests (stubs(:browser), receive(:browser)) -&gt; stubs of agentry.
+3. Leave alone: local variables, instance variables or methods the app itself names browser, such as a test
+   driver (only what the gem's helper filled or returned changes),
    names that merely contain the word (SamsungBrowser, :browser_automation, "Samsung Browser"),
    fixtures, recorded data, translations and comments that talk about web browsers.
 4. Run the test suite with RUBYOPT=-W:deprecated. Fix each "[agentry] ... deprecated" warning it prints, and run it again
    until none is left and the suite is as green as before.
-5. Grep for leftovers: git grep -nP '\bBrowser\b(::|\.|\[)|require.*"browser|@browser\b|\bbrowser\.|config\.browser' and check each hit by hand,
+5. Grep for leftovers: git grep -nP '\bBrowser\b(::|\.|\[)|require.*"browser|@browser\b|\(:browser\)|\bbrowser(\.|&amp;\.|\[)|config\.browser' and check each hit by hand,
    including class.name comparisons ("Browser::Chrome" is now "Agentry::Chrome") and after: "browser" initializers.
 6. Do not change any answer the app relies on, add features or refactor. Show me the diff and the list of files you changed.</code></pre>
       </div>

@@ -57,6 +57,28 @@ class AgentryRailsTest < Minitest::Test
     assert_equal "Chrome", controller.send(:agentry).name
   end
 
+  test "agentry fills @browser for views written for the browser gem" do
+    controller = AgentryController.new
+    controller.set_request!(ActionDispatch::Request.new(CHROME_ENV.dup))
+
+    assert_same controller.send(:agentry), controller.instance_variable_get(:@browser)
+  end
+
+  test "browser in a middleware block follows whichever of @browser and @agentry the block reassigned" do
+    iphone = Agentry.new(Agentry["IPHONE"])
+    seen = []
+    [-> { @browser = iphone }, -> { @agentry = iphone }].each do |reassign|
+      middleware = Agentry::Middleware.new(->(_env) { [200, {}, []] }) do
+        instance_exec(&reassign)
+        seen << browser.device.iphone?
+        nil
+      end
+      capture_io { middleware.call(CHROME_ENV.dup) }
+    end
+
+    assert_equal [true, true], seen
+  end
+
   test "a middleware block calls agentry, browser once deprecated" do
     seen = []
     middleware = Agentry::Middleware.new(->(_env) { [200, {}, []] }) do

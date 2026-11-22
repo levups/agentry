@@ -53,7 +53,7 @@ class BrowserCompatibilityTest < Minitest::Test
     end
   end
 
-  test "a deprecation fired under -W0 still prints once warnings come back" do
+  test "a deprecation fired while $VERBOSE is nil still prints once it is false" do
     _output, errors, status = run_ruby('require "agentry"', "$VERBOSE = nil", 'Agentry.deprecate("alice")',
       "$VERBOSE = false", 'Agentry.deprecate("alice")')
 
