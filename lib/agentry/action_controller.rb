@@ -11,15 +11,11 @@ module Agentry
     end
 
     private def agentry
-      return @agentry if @agentry
-
-      @agentry = Agentry.new(
+      @agentry ||= Agentry.new(
         request.headers["User-Agent"],
         accept_language: request.headers["Accept-Language"],
         headers: request.env
       )
-      @browser ||= @agentry # browser's name, read by views written for it, until 5.0
-      @agentry
     end
 
     # Fills and honours @browser, as browser's helper did: apps and tests set it to fake a device.

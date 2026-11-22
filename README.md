@@ -253,7 +253,8 @@ Replace `gem "browser"` with `gem "agentry", require: "browser"` in the Gemfile 
 if the app had it). Code written for browser keeps working on Agentry 4: the require paths browser documents
 (`browser`, `browser/browser`, `browser/aliases`) and `browser/testing`, `browser/rails` still load and define
 `Browser` as another name for `Agentry`, and the `browser` helper still answers. A bare `gem "agentry"` leaves out
-the `Browser` constant, which then raises `NameError`. The old names are deprecated and go away in Agentry 5, so move to the new ones when you can:
+the `Browser` constant, which then raises `NameError`. The old names are deprecated and go away in Agentry 5,
+so move to the new ones when you can:
 
 | browser, deprecated in Agentry 4 | Agentry |
 |---|---|
