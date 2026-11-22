@@ -95,6 +95,19 @@ class AgentryRailsTest < Minitest::Test
     agentry_config.delete(:alice)
   end
 
+  test "a config.browser the app reassigned becomes config.agentry, once deprecated" do
+    config = ActiveSupport::OrderedOptions.new
+    config.agentry = ActiveSupport::OrderedOptions.new
+    config.browser = ActiveSupport::OrderedOptions.new
+    config.browser.default_url_options = {host: "alice.example.com"}
+    _out, errors = capture_io do
+      with_deprecations_shown { Agentry::Railtie.adopt_reassigned_browser_config(config) }
+    end
+
+    assert_equal({host: "alice.example.com"}, config.agentry.default_url_options)
+    assert_includes errors, "config.browser is deprecated"
+  end
+
   test "a deprecation hidden when it first fires prints once deprecations are shown" do
     with_deprecations_shown do
       Warning[:deprecated] = false

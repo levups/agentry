@@ -19,6 +19,16 @@ module Agentry
     config.browser = BrowserConfig.new(config.agentry)
     config.eager_load_namespaces << Agentry
 
+    # An app that assigned config.browser a new object replaced the wrapper: its options become config.agentry.
+    def self.adopt_reassigned_browser_config(config)
+      return if config.browser.is_a?(BrowserConfig)
+
+      Agentry.deprecate("config.browser is deprecated and goes away in 5.0: use config.agentry")
+      config.agentry = config.browser
+    end
+
+    config.after_initialize { |app| adopt_reassigned_browser_config(app.config) }
+
     initializer "agentry" do
       ActiveSupport.on_load(:action_controller) do
         ::ActionController::Base.include(Agentry::ActionController)
