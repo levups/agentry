@@ -5,8 +5,10 @@ module Agentry
     class Context
       module UrlMethods
         def default_url_options
-          Rails.configuration.agentry.default_url_options ||
-            Rails.configuration.action_mailer.default_url_options ||
+          config = Rails.configuration
+
+          config.agentry.default_url_options ||
+            (config.action_mailer.default_url_options if config.respond_to?(:action_mailer)) ||
             {}
         end
       end

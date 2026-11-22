@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [3.1.2] — 2026-11-22
+
+Six more bots recognized, and fresh IP ranges for verified Google, Bing and OpenAI crawlers.
+
+**Fixed**
+- `bot?` is true for six bots added to crawler-user-agents and ai.robots.txt since 3.1.1: Claude-Agent and
+  MiniMaxAgent (`ai_agent`), Google-GeminiNotebook, Haiku-SearchBot and Liner-User (`ai_assistant`), and ScooterZA
+  (`monitoring_and_analytics`).
+- Verified crawler IP ranges follow what their owners publish: 20 new Google ranges, 1 for Bing and 2 for OpenAI, so
+  crawlers on those new addresses pass the IP check.
+
 ## [3.1.1] — 2026-11-07
 
 Crafted request headers can no longer grow a process for good or make it raise.
@@ -113,7 +124,8 @@ First release, forked from browser 6.2.0 (`dd88933`). Same API: `gem "agentry"` 
 - A corpus of 20,328 user agents, with snapshot and diff scripts proving answers match upstream, and a
   request benchmark.
 
-[Unreleased]: https://github.com/levups/agentry/compare/v3.1.1...HEAD
+[Unreleased]: https://github.com/levups/agentry/compare/v3.1.2...HEAD
+[3.1.2]: https://github.com/levups/agentry/compare/v3.1.1...v3.1.2
 [3.1.1]: https://github.com/levups/agentry/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/levups/agentry/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/levups/agentry/compare/v2.1.0...v3.0.0

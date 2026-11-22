@@ -21,24 +21,24 @@
     },
     {
       "category": "ai_agent",
-      "user_agents": 35,
+      "user_agents": 37,
       "upstream_bots": 12,
-      "agentry_bots": 21,
-      "agentry_categorized": 28
+      "agentry_bots": 23,
+      "agentry_categorized": 30
     },
     {
       "category": "ai_assistant",
-      "user_agents": 35,
-      "upstream_bots": 19,
-      "agentry_bots": 34,
-      "agentry_categorized": 34
+      "user_agents": 38,
+      "upstream_bots": 20,
+      "agentry_bots": 37,
+      "agentry_categorized": 37
     },
     {
       "category": "ai_crawler",
-      "user_agents": 186,
-      "upstream_bots": 150,
-      "agentry_bots": 183,
-      "agentry_categorized": 183
+      "user_agents": 187,
+      "upstream_bots": 151,
+      "agentry_bots": 184,
+      "agentry_categorized": 184
     },
     {
       "category": "ai_search",
@@ -77,10 +77,10 @@
     },
     {
       "category": "monitoring_and_analytics",
-      "user_agents": 260,
+      "user_agents": 261,
       "upstream_bots": 141,
-      "agentry_bots": 258,
-      "agentry_categorized": 256
+      "agentry_bots": 259,
+      "agentry_categorized": 257
     },
     {
       "category": "page_preview",
@@ -112,10 +112,10 @@
     }
   ],
   "total": {
-    "user_agents": 2326,
-    "upstream_bots": 1641,
-    "agentry_bots": 2264,
-    "agentry_categorized": 2270
+    "user_agents": 2333,
+    "upstream_bots": 1643,
+    "agentry_bots": 2271,
+    "agentry_categorized": 2277
   },
   "recent_crawlers": {
     "added_since": "2024-01-01",
@@ -123,8 +123,8 @@
       "browser-automation",
       "scanner"
     ],
-    "user_agents": 882,
+    "user_agents": 883,
     "upstream_bots": 529,
-    "agentry_bots": 871
+    "agentry_bots": 872
   }
 }
