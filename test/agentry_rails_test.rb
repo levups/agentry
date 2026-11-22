@@ -19,11 +19,13 @@ class AgentryRailsTest < Minitest::Test
 
   def with_deprecations_shown
     shown = Warning[:deprecated]
+    printed = Agentry.instance_variable_get(:@deprecations)
     Warning[:deprecated] = true
     Agentry.instance_variable_set(:@deprecations, Set.new)
     yield
   ensure
     Warning[:deprecated] = shown
+    Agentry.instance_variable_set(:@deprecations, printed)
   end
 
   test "controllers and views call agentry" do
@@ -44,49 +46,53 @@ class AgentryRailsTest < Minitest::Test
     assert_equal 1, errors.scan("the browser helper is deprecated").size
   end
 
+  test "the browser helper honours a @browser set for the browser gem, agentry does not" do
+    controller = AgentryController.new
+    controller.set_request!(ActionDispatch::Request.new(CHROME_ENV.dup))
+    controller.instance_variable_set(:@browser, Agentry.new(Agentry["IPHONE"]))
+
+    capture_io do
+      assert_predicate controller.send(:browser).device, :iphone?
+    end
+    assert_equal "Chrome", controller.send(:agentry).name
+  end
+
   test "a middleware block calls agentry, browser once deprecated" do
     seen = []
     middleware = Agentry::Middleware.new(->(_env) { [200, {}, []] }) do
-      seen << [agentry.name, browser.equal?(agentry)]
+      seen << [agentry.name, browser.equal?(agentry), @browser.equal?(agentry)]
       nil
     end
     _out, errors = capture_io do
       with_deprecations_shown { middleware.call(CHROME_ENV.dup) }
     end
 
-    assert_equal [["Chrome", true]], seen
+    assert_equal [["Chrome", true, true]], seen
     assert_includes errors, "browser in an Agentry::Middleware block is deprecated"
   end
 
   test "config.browser still reaches config.agentry, once deprecated" do
-    options = nil
+    agentry_config = Rails.application.config.agentry
     _out, errors = capture_io do
-      with_deprecations_shown { 2.times { options = Rails.application.config.browser.to_h } }
+      with_deprecations_shown { 2.times { Rails.application.config.browser.alice = "bob" } }
     end
 
-    assert_equal Rails.application.config.agentry.to_h, options
+    assert_equal "bob", agentry_config.alice
     assert_equal 1, errors.scan("config.browser is deprecated").size
-  end
-
-  test "a @browser set for the browser gem's helper still answers" do
-    controller = AgentryController.new
-    controller.instance_variable_set(:@browser, Agentry.new(Agentry["IPHONE"]))
-
-    assert_predicate controller.send(:agentry).device, :iphone?
+  ensure
+    agentry_config.delete(:alice)
   end
 
   test "a deprecation hidden when it first fires prints once deprecations are shown" do
-    shown = Warning[:deprecated]
-    Agentry.instance_variable_set(:@deprecations, Set.new)
-    Warning[:deprecated] = false
-    Agentry.deprecate("alice is deprecated")
-    _out, errors = capture_io do
-      Warning[:deprecated] = true
+    with_deprecations_shown do
+      Warning[:deprecated] = false
       Agentry.deprecate("alice is deprecated")
-    end
+      _out, errors = capture_io do
+        Warning[:deprecated] = true
+        Agentry.deprecate("alice is deprecated")
+      end
 
-    assert_includes errors, "alice is deprecated"
-  ensure
-    Warning[:deprecated] = shown
+      assert_includes errors, "alice is deprecated"
+    end
   end
 end

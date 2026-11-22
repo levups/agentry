@@ -11,16 +11,17 @@ module Agentry
     end
 
     private def agentry
-      @agentry ||= @browser || Agentry.new( # @browser: set by apps and tests written for the browser gem
+      @agentry ||= Agentry.new(
         request.headers["User-Agent"],
         accept_language: request.headers["Accept-Language"],
         headers: request.env
       )
     end
 
+    # Fills and honours @browser, as browser's helper did: apps and tests set it to fake a device.
     private def browser
       Agentry.deprecate("the browser helper is deprecated and goes away in 5.0: call agentry")
-      agentry
+      @browser ||= agentry
     end
   end
 end

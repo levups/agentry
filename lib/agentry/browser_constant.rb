@@ -3,7 +3,7 @@
 # Loaded only by the browser/* require paths kept for 4.x: `require "agentry"` alone defines no Browser.
 if Gem.loaded_specs.key?("browser")
   raise LoadError, "agentry's browser/* require paths define Browser, which the browser gem defines too: " \
-    "require \"agentry\" and call Agentry instead, or remove gem \"browser\" from the Gemfile"
+    "Agentry 4 cannot share a bundle with the browser gem, remove it (or the gem that needs it) from the Gemfile"
 end
 
 Browser = Agentry

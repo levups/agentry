@@ -13,6 +13,7 @@ module Agentry
           accept_language: request.env["HTTP_ACCEPT_LANGUAGE"],
           headers: request.env
         )
+        @browser = @agentry # browser's name, read by middleware blocks written for it, until 5.0
       end
 
       def browser

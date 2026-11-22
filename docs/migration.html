@@ -51,7 +51,7 @@
         <p>Change one line of the Gemfile, nothing else:</p>
 <pre><code class="language-diff"><span class="gd">- gem "browser"
 </span><span class="gi">+ gem "agentry", require: "browser"</span></code></pre>
-        <p>Agentry 4 still answers to the names browser used: <code>require "browser"</code>, <code>require "browser/aliases"</code> or <code>require: "browser/browser"</code> (and <code>browser/testing</code>, <code>browser/rails</code>) keep the meaning they had, define <code>Browser</code> as another name for <code>Agentry</code>, and the <code>browser</code> helper of Rails controllers and views still answers. Other <code>browser/*</code> files, such as <code>browser/middleware</code>, are gone: require one of those instead. A bare <code>gem "agentry"</code> loads only the new names, so <code>Browser</code> raises <code>NameError</code>. They are deprecated, so <a href="#names">move to the new names</a> when you can. Agentry is forked from browser 6.2.0 (<code>dd88933</code>), and every pull request diffs its answers against that version on the 20,328 user agents of <a href="bots.html#corpus">the corpus</a>.</p>
+        <p>Agentry 4 still answers to the names browser used: <code>require "browser"</code>, <code>require "browser/aliases"</code> or <code>require: "browser/browser"</code> (and <code>browser/testing</code>, <code>browser/rails</code>) keep the meaning they had, define <code>Browser</code> as another name for <code>Agentry</code>, and the <code>browser</code> helper of Rails controllers and views still answers. Other <code>browser/*</code> files, such as <code>browser/middleware</code>, are gone: require one of those instead. Keep <code>require: "browser/browser"</code> if the app had it. A bare <code>gem "agentry"</code> leaves out the <code>Browser</code> constant, which then raises <code>NameError</code>. They are deprecated, so <a href="#names">move to the new names</a> when you can. Agentry is forked from browser 6.2.0 (<code>dd88933</code>), and every pull request diffs its answers against that version on the 20,328 user agents of <a href="bots.html#corpus">the corpus</a>.</p>
 
         <h3>What changes on its own</h3>
         <ul>
@@ -85,7 +85,7 @@
             <tr><td><code>require: "browser/browser"</code> (without Rails)</td><td><code>require: "agentry/agentry"</code></td></tr>
             <tr><td><code>require "browser/aliases"</code>, <code>"browser/testing"</code>, <code>"browser/rails"</code></td><td><code>require "agentry/aliases"</code>, <code>"agentry/testing"</code>, <code>"agentry/rails"</code></td></tr>
             <tr><td><code>Browser.new(…)</code>, <code>Browser::Bot</code>, <code>Browser::Middleware</code>…</td><td><code>Agentry.new(…)</code>, <code>Agentry::Bot</code>, <code>Agentry::Middleware</code>…</td></tr>
-            <tr><td>the <code>browser</code> helper, <code>browser</code> in a middleware block</td><td><code>agentry</code></td></tr>
+            <tr><td>the <code>browser</code> helper, <code>browser</code> or <code>@browser</code> in a middleware block</td><td><code>agentry</code></td></tr>
             <tr><td><code>config.browser</code></td><td><code>config.agentry</code></td></tr>
           </tbody>
         </table>
@@ -93,8 +93,8 @@
       <div class="prose">
         <p>Each old name warns once per process, only where Ruby shows deprecations. Run the test suite with them shown to list what is left:</p>
 <pre><code class="language-shell"><span class="nv">RUBYOPT</span><span class="o">=</span><span class="nt">-W</span>:deprecated bin/rails <span class="nb">test
-</span>git <span class="nb">grep</span> <span class="nt">-nE</span> <span class="s1">'\bBrowser\b(::|\.|\[)|require.*"browser|\bbrowser\.|config\.browser'</span></code></pre>
-        <p>The grep also finds a local variable named <code>browser</code>: it can keep its name, only the helper call becomes <code>agentry</code>. Names that merely contain the word (<code>SamsungBrowser</code>, <code>:browser_automation</code>) are not old names. Two changes no warning shows: class names read <code>Agentry::Chrome</code> even where code calls <code>Browser</code> (check <code>class.name</code> comparisons and marshalled objects), and the Railtie initializer is named <code>"agentry"</code>, so <code>before: "browser"</code> or <code>after: "browser"</code> no longer orders anything. Agentry 4 ships the same <code>browser/*</code> files as the browser gem, so it cannot share a bundle with it, for example through a dependency that still needs browser; Agentry 5 drops those files.</p>
+</span>git <span class="nb">grep</span> <span class="nt">-nP</span> <span class="s1">'\bBrowser\b(::|\.|\[)|require.*"browser|@?\bbrowser\.|config\.browser'</span></code></pre>
+        <p>The grep also finds a local variable named <code>browser</code>: it can keep its name, only the helper call becomes <code>agentry</code>. Names that merely contain the word (<code>SamsungBrowser</code>, <code>:browser_automation</code>) are not old names. Three changes no warning shows: the <code>@browser</code> instance variable of controllers and middleware blocks, class names read <code>Agentry::Chrome</code> even where code calls <code>Browser</code> (check <code>class.name</code> comparisons and marshalled objects), and the Railtie initializer is named <code>"agentry"</code>, so <code>before: "browser"</code> or <code>after: "browser"</code> no longer orders anything. Agentry 4 ships the same <code>browser/*</code> files as the browser gem, so it cannot share a bundle with it, for example through a dependency that still needs browser; Agentry 5 drops those files.</p>
       </div>
     </section>
 
@@ -124,7 +124,7 @@ Rules: https://levups.github.io/agentry/migration.html#names
    fixtures, recorded data, translations and comments that talk about web browsers.
 4. Run the test suite with RUBYOPT=-W:deprecated. Fix each "[agentry] ... deprecated" warning it prints, and run it again
    until none is left and the suite is as green as before.
-5. Grep for leftovers: git grep -nE '\bBrowser\b(::|\.|\[)|require.*"browser|\bbrowser\.|config\.browser' and check each hit by hand,
+5. Grep for leftovers: git grep -nP '\bBrowser\b(::|\.|\[)|require.*"browser|@?\bbrowser\.|config\.browser' and check each hit by hand,
    including class.name comparisons ("Browser::Chrome" is now "Agentry::Chrome") and after: "browser" initializers.
 6. Do not change any answer the app relies on, add features or refactor. Show me the diff and the list of files you changed.</code></pre>
       </div>

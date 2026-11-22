@@ -69,13 +69,15 @@ module Agentry
   MIGRATION_GUIDE_URL = "https://levups.github.io/agentry/migration.html"
 
   @deprecations = Set.new
+  @deprecations_lock = Mutex.new
 
   # Once per message, and only where Ruby shows deprecations (-W:deprecated, Warning[:deprecated] = true): a
   # message hidden when it first fires still prints once deprecations are shown.
   def self.deprecate(message)
-    return unless Warning[:deprecated]
+    return if $VERBOSE.nil? || !Warning[:deprecated]
+    return unless @deprecations_lock.synchronize { @deprecations.add?(message) }
 
-    warn("[agentry] #{message}, see #{MIGRATION_GUIDE_URL}", category: :deprecated) if @deprecations.add?(message)
+    warn("[agentry] #{message}, see #{MIGRATION_GUIDE_URL}", category: :deprecated)
   end
 
   # data/bots.json for "bots", written from bots.yml by script/build_data.rb: edit the YAML.

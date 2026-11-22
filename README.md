@@ -249,10 +249,10 @@ loads, which production does by default. Elsewhere, call `Agentry.eager_load!` b
 
 ## Switching from browser
 
-Replace `gem "browser"` with `gem "agentry", require: "browser"` in the Gemfile. Code written for browser keeps
-working on Agentry 4: the require paths browser documents (`browser`, `browser/browser`, `browser/aliases`) and
+Replace `gem "browser"` with `gem "agentry", require: "browser"` in the Gemfile (keep `require: "browser/browser"`
+if the app had it). Code written for browser keeps working on Agentry 4: the require paths browser documents (`browser`, `browser/browser`, `browser/aliases`) and
 `browser/testing`, `browser/rails` still load and define `Browser` as another name for `Agentry`, and the `browser`
-helper still answers. A bare `gem "agentry"` loads only the new names, so `Browser` raises `NameError`. The old
+helper still answers. A bare `gem "agentry"` leaves out the `Browser` constant, which then raises `NameError`. The old
 names are deprecated and go away in Agentry 5, so move to the new ones when you can:
 
 | browser, deprecated in Agentry 4 | Agentry |
@@ -261,7 +261,7 @@ names are deprecated and go away in Agentry 5, so move to the new ones when you 
 | `require: "browser/browser"` (without Rails) | `require: "agentry/agentry"` |
 | `require "browser/aliases"`, `"browser/testing"`, `"browser/rails"` | `require "agentry/aliases"`, `"agentry/testing"`, `"agentry/rails"` |
 | `Browser.new(…)`, `Browser::Bot`, `Browser::Middleware`… | `Agentry.new(…)`, `Agentry::Bot`, `Agentry::Middleware`… |
-| the `browser` helper, `browser` in a middleware block | `agentry` |
+| the `browser` helper, `browser` or `@browser` in a middleware block | `agentry` |
 | `config.browser` | `config.agentry` |
 
 Each deprecation warns once per process, only where Ruby shows deprecations: run the tests with

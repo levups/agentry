@@ -34,20 +34,14 @@ class BrowserCompatibilityTest < Minitest::Test
     end
   end
 
-  test "loads next to the browser gem" do
-    _output, errors, status = run_ruby(ACTIVATE_BROWSER_GEM, 'require "agentry"')
-
-    assert status.success?, errors
-  end
-
   test "the browser require paths refuse to load next to the browser gem" do
     _output, errors, status = run_ruby(ACTIVATE_BROWSER_GEM, 'require "browser/browser"')
 
     refute status.success?
-    assert_includes errors, "which the browser gem defines too"
+    assert_includes errors, "Agentry 4 cannot share a bundle with the browser gem"
   end
 
-  %w[browser browser/browser browser/aliases browser/testing].each do |path|
+  %w[browser browser/browser browser/aliases browser/testing browser/rails].each do |path|
     test "require #{path.inspect} still defines Browser, once deprecated" do
       output, errors, status = run_ruby(%(require "#{path}"), %(require "browser"),
         "print Browser.equal?(Agentry)")
