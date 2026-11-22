@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
-require_relative "lib/browser/version"
+require_relative "lib/agentry/version"
 
 Gem::Specification.new do |s|
   s.name = "agentry"
-  s.version = Browser::VERSION
+  s.version = Agentry::VERSION
   s.platform = Gem::Platform::RUBY
   s.authors = ["Nando Vieira", "Level UP Solutions"]
   s.homepage = "https://github.com/levups/agentry"
   s.summary = "Detects the browser, platform, device and bot behind a User-Agent header"
-  s.description = "Agentry replaces the browser gem without changing a call site, with the same Browser class, " \
-                  "methods and require paths. It is faster, updates its bot list every week, names the category " \
-                  "of each bot and checks the IP addresses of known crawlers."
+  s.description = "Agentry, a fork of the browser gem, answers the same questions under its own name: Agentry " \
+                  "instead of Browser, which it still answers to until 5.0. It is faster, updates its bot list " \
+                  "every week, names the category of each bot and checks the IP addresses of known crawlers."
   s.license = "MIT"
   s.required_ruby_version = ">= 3.3"
 

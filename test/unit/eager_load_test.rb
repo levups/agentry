@@ -8,11 +8,11 @@ class EagerLoadTest < Minitest::Test
   test "leaves nothing for the first request to load or build" do
     lib_path = File.expand_path("../../lib", __dir__)
     first_request = <<~RUBY
-      require "browser"
-      Browser.eager_load!
-      Browser.define_singleton_method(:load_data) { |name| raise "loaded \#{name} after eager_load!" }
-      Browser::Bot.singleton_class.send(:define_method, :trie_source) { |_words| raise "built a trie after eager_load!" }
-      browser = Browser.new("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+      require "agentry"
+      Agentry.eager_load!
+      Agentry.define_singleton_method(:load_data) { |name| raise "loaded \#{name} after eager_load!" }
+      Agentry::Bot.singleton_class.send(:define_method, :trie_source) { |_words| raise "built a trie after eager_load!" }
+      browser = Agentry.new("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
         accept_language: "fr-FR,fr;q=0.9")
       browser.bot.category
       browser.bot.search_engine?

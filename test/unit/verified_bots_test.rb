@@ -5,7 +5,7 @@ require "net/http"
 require "resolv"
 
 class VerifiedBotsTest < Minitest::Test
-  IP_RANGES = Browser::Bot::IPRanges
+  IP_RANGES = Agentry::Bot::IPRanges
   GOOGLEBOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
   GPTBOT = "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)"
   CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
@@ -61,15 +61,15 @@ class VerifiedBotsTest < Minitest::Test
   end
 
   test "names the owner of a crawler that publishes its ranges" do
-    assert_equal :google, Browser.new(GOOGLEBOT).bot.owner
-    assert_equal :openai, Browser.new(GPTBOT).bot.owner
-    assert_equal :bing, Browser.new(Browser["BINGBOT"]).bot.owner
-    assert_nil Browser.new(Browser["YANDEX_DIRECT"]).bot.owner
-    assert_nil Browser.new(CHROME).bot.owner
+    assert_equal :google, Agentry.new(GOOGLEBOT).bot.owner
+    assert_equal :openai, Agentry.new(GPTBOT).bot.owner
+    assert_equal :bing, Agentry.new(Agentry["BINGBOT"]).bot.owner
+    assert_nil Agentry.new(Agentry["YANDEX_DIRECT"]).bot.owner
+    assert_nil Agentry.new(CHROME).bot.owner
   end
 
   test "verifies a crawler coming from its owner's ranges" do
-    bot = Browser.new(GOOGLEBOT).bot
+    bot = Agentry.new(GOOGLEBOT).bot
 
     assert bot.verified?("66.249.66.1")
     assert bot.verified?("66.249.64.63")
@@ -81,12 +81,12 @@ class VerifiedBotsTest < Minitest::Test
   end
 
   test "never verifies a user agent without an owner" do
-    refute Browser.new(CHROME).bot.verified?("66.249.66.1")
-    refute Browser.new(Browser["YANDEX_DIRECT"]).bot.verified?("66.249.66.1")
+    refute Agentry.new(CHROME).bot.verified?("66.249.66.1")
+    refute Agentry.new(Agentry["YANDEX_DIRECT"]).bot.verified?("66.249.66.1")
   end
 
   test "answers false to an invalid IP instead of raising" do
-    bot = Browser.new(GOOGLEBOT).bot
+    bot = Agentry.new(GOOGLEBOT).bot
 
     [nil, "", "garbage", "66.249.66", "66.249.66.1, 10.0.0.1", "66.249.66.0/24", "::g", 42].each do |ip|
       refute bot.verified?(ip), "#{ip.inspect} verified"
@@ -106,7 +106,7 @@ class VerifiedBotsTest < Minitest::Test
   test "reverse DNS stays off unless asked" do
     with_dns({"66.249.90.1" => "crawl-66-249-90-1.googlebot.com"},
       "crawl-66-249-90-1.googlebot.com" => [Resolv::IPv4.create("66.249.90.1")]) do
-      bot = Browser.new(GOOGLEBOT).bot
+      bot = Agentry.new(GOOGLEBOT).bot
 
       refute bot.verified?("66.249.90.1")
       assert bot.verified?("66.249.90.1", reverse_dns: true)
@@ -116,7 +116,7 @@ class VerifiedBotsTest < Minitest::Test
   test "reverse DNS needs the owner's domain and a forward lookup back to the IP" do
     with_dns({"66.249.90.1" => "crawl.googlebot.com.example.org", "66.249.90.2" => "crawl.googlebot.com"},
       "crawl.googlebot.com" => [Resolv::IPv4.create("66.249.90.3")]) do
-      bot = Browser.new(GOOGLEBOT).bot
+      bot = Agentry.new(GOOGLEBOT).bot
 
       refute bot.verified?("66.249.90.1", reverse_dns: true)
       refute bot.verified?("66.249.90.2", reverse_dns: true)
@@ -127,7 +127,7 @@ class VerifiedBotsTest < Minitest::Test
   test "reverse DNS refuses a Google Cloud VM's googleusercontent.com name" do
     with_dns({"34.1.2.3" => "3.2.1.34.bc.googleusercontent.com"},
       "3.2.1.34.bc.googleusercontent.com" => [Resolv::IPv4.create("34.1.2.3")]) do
-      refute Browser.new(GOOGLEBOT).bot.verified?("34.1.2.3", reverse_dns: true)
+      refute Agentry.new(GOOGLEBOT).bot.verified?("34.1.2.3", reverse_dns: true)
     end
   end
 
@@ -136,7 +136,7 @@ class VerifiedBotsTest < Minitest::Test
 
   test "reverse DNS asks the DNS on every call unless a cache is set" do
     with_dns(GOOGLE_NAME_BY_IP, GOOGLE_ADDRESSES_BY_NAME) do |dns|
-      bot = Browser.new(GOOGLEBOT).bot
+      bot = Agentry.new(GOOGLEBOT).bot
       2.times { assert bot.verified?("66.249.90.1", reverse_dns: true) }
 
       assert_equal 4, dns.queries.size
@@ -147,7 +147,7 @@ class VerifiedBotsTest < Minitest::Test
   test "reverse DNS remembers verdicts, forged ones included, when asked to" do
     IP_RANGES.dns_cache_size = 10
     with_dns(GOOGLE_NAME_BY_IP, GOOGLE_ADDRESSES_BY_NAME) do |dns|
-      bot = Browser.new(GOOGLEBOT).bot
+      bot = Agentry.new(GOOGLEBOT).bot
       2.times do
         assert bot.verified?("66.249.90.1", reverse_dns: true)
         refute bot.verified?("203.0.113.1", reverse_dns: true)
@@ -161,7 +161,7 @@ class VerifiedBotsTest < Minitest::Test
   test "reverse DNS forgets the oldest verdict when the cache is full" do
     IP_RANGES.dns_cache_size = 1
     with_dns(GOOGLE_NAME_BY_IP, GOOGLE_ADDRESSES_BY_NAME) do |dns|
-      bot = Browser.new(GOOGLEBOT).bot
+      bot = Agentry.new(GOOGLEBOT).bot
       %w[203.0.113.1 203.0.113.2 203.0.113.2 203.0.113.1].each { |ip| refute bot.verified?(ip, reverse_dns: true) }
 
       assert_equal %w[203.0.113.1 203.0.113.2 203.0.113.1], dns.queries
@@ -172,7 +172,7 @@ class VerifiedBotsTest < Minitest::Test
     IP_RANGES.dns_cache_size = 10
     IP_RANGES.dns_cache_ttl = 0.01
     with_dns(GOOGLE_NAME_BY_IP, GOOGLE_ADDRESSES_BY_NAME) do |dns|
-      bot = Browser.new(GOOGLEBOT).bot
+      bot = Agentry.new(GOOGLEBOT).bot
       refute bot.verified?("203.0.113.1", reverse_dns: true)
       sleep 0.02
       refute bot.verified?("203.0.113.1", reverse_dns: true)
@@ -184,7 +184,7 @@ class VerifiedBotsTest < Minitest::Test
   test "reverse DNS takes the timeout given" do
     IP_RANGES.dns_timeout = 0.25
     with_dns(GOOGLE_NAME_BY_IP, GOOGLE_ADDRESSES_BY_NAME) do |dns|
-      Browser.new(GOOGLEBOT).bot.verified?("203.0.113.1", reverse_dns: true)
+      Agentry.new(GOOGLEBOT).bot.verified?("203.0.113.1", reverse_dns: true)
 
       assert_in_delta 0.25, dns.timeouts
     end
@@ -200,7 +200,7 @@ class VerifiedBotsTest < Minitest::Test
 
   test "reverse DNS is not tried for owners that document none" do
     with_dns({"132.196.87.1" => "anything.openai.com"}, "anything.openai.com" => [Resolv::IPv4.create("132.196.87.1")]) do
-      refute Browser.new(GPTBOT).bot.verified?("132.196.87.1", reverse_dns: true)
+      refute Agentry.new(GPTBOT).bot.verified?("132.196.87.1", reverse_dns: true)
     end
   end
 
@@ -217,8 +217,8 @@ class VerifiedBotsTest < Minitest::Test
   test "load swaps the ranges at runtime" do
     IP_RANGES.load(google: ["192.0.2.0/24"])
 
-    assert Browser.new(GOOGLEBOT).bot.verified?("192.0.2.1")
-    refute Browser.new(GOOGLEBOT).bot.verified?("66.249.66.1")
+    assert Agentry.new(GOOGLEBOT).bot.verified?("192.0.2.1")
+    refute Agentry.new(GOOGLEBOT).bot.verified?("66.249.66.1")
   end
 
   def with_responses(responses)
@@ -261,7 +261,7 @@ class VerifiedBotsTest < Minitest::Test
   test "fetch refuses a redirect to another host or to plain HTTP" do
     ["https://example.org/ranges.json", "http://example.com/ranges.json", nil].each do |location|
       with_responses([response(302, location:)]) do
-        assert_raises(Browser::Error) { fetch_prefixes("https://example.com/ranges.json") }
+        assert_raises(Agentry::Error) { fetch_prefixes("https://example.com/ranges.json") }
       end
     end
   end
@@ -270,7 +270,7 @@ class VerifiedBotsTest < Minitest::Test
     ["[]", "{}", '{"prefixes": []}', '{"prefixes": ["66.249.64.0/27"]}', '{"prefixes": [{"ipv4Prefix": 1}]}',
       "not json"].each do |body|
       with_responses([response(200, body:)]) do
-        assert_raises(Browser::Error, body) { fetch_prefixes("https://example.com/ranges.json") }
+        assert_raises(Agentry::Error, body) { fetch_prefixes("https://example.com/ranges.json") }
       end
     end
   end
@@ -281,7 +281,7 @@ class VerifiedBotsTest < Minitest::Test
       ff02::/16].each do |prefix|
       IP_RANGES.define_singleton_method(:fetch_prefixes) { |_url| ["66.249.64.0/27", prefix] }
 
-      assert_raises(Browser::Error, prefix) { IP_RANGES.fetch }
+      assert_raises(Agentry::Error, prefix) { IP_RANGES.fetch }
     end
   ensure
     IP_RANGES.define_singleton_method(:fetch_prefixes, original_fetch_prefixes)
@@ -290,10 +290,10 @@ class VerifiedBotsTest < Minitest::Test
 
   test "refresh keeps the current ranges when a source fails" do
     original_fetch = IP_RANGES.method(:fetch)
-    IP_RANGES.define_singleton_method(:fetch) { raise Browser::Error, "https://example.org: HTTP 503" }
+    IP_RANGES.define_singleton_method(:fetch) { raise Agentry::Error, "https://example.org: HTTP 503" }
 
-    assert_raises(Browser::Error) { IP_RANGES.refresh }
-    assert Browser.new(GOOGLEBOT).bot.verified?("66.249.66.1")
+    assert_raises(Agentry::Error) { IP_RANGES.refresh }
+    assert Agentry.new(GOOGLEBOT).bot.verified?("66.249.66.1")
   ensure
     IP_RANGES.define_singleton_method(:fetch, original_fetch)
   end

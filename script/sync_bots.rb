@@ -195,15 +195,15 @@ end
 # Agentry knows, which no crawler-user-agents pattern matches) is left out.
 def browser_user_agents(curated_bots)
   $LOAD_PATH.unshift(File.join(ROOT, "lib"))
-  require "browser"
+  require "agentry"
   # Judged by the curated list alone, or a keyword synced last week would hide the browsers it flags.
-  Browser::Bot.instance_variable_set(:@bots, curated_bots)
+  Agentry::Bot.instance_variable_set(:@bots, curated_bots)
   crawler_pattern = Regexp.union(read_source("crawler-user-agents.json").map { Regexp.new(_1["pattern"]) })
   File.foreach(CORPUS_PATH, chomp: true).filter_map do |user_agent|
-    next if user_agent.length > Browser.user_agent_size_limit
+    next if user_agent.length > Agentry.user_agent_size_limit
     next if user_agent.match?(crawler_pattern)
 
-    browser = Browser.new(user_agent)
+    browser = Agentry.new(user_agent)
     user_agent.downcase if browser.known? && !browser.bot?
   end
 end

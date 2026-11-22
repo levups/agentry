@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "browser/rails"
+require "agentry/rails"
 require "sample_app"
 
 class RequestHeadersTest < Minitest::Test
   class SignalsController < ActionController::Base
     def show
-      render plain: [browser.platform.version, browser.device.mobile?, browser.cloudflare.country].join(" ")
+      render plain: [agentry.platform.version, agentry.device.mobile?, agentry.cloudflare.country].join(" ")
     end
   end
 
@@ -29,8 +29,8 @@ class RequestHeadersTest < Minitest::Test
 
   test "the middleware reads them too" do
     seen = nil
-    middleware = Browser::Middleware.new(->(_env) { [200, {}, []] }) do
-      seen = [browser.platform.windows11?, browser.cloudflare.country]
+    middleware = Agentry::Middleware.new(->(_env) { [200, {}, []] }) do
+      seen = [agentry.platform.windows11?, agentry.cloudflare.country]
       nil
     end
 
@@ -42,8 +42,8 @@ class RequestHeadersTest < Minitest::Test
   test "the middleware and the helper read headers that are not valid UTF-8" do
     headers = HEADERS.merge("HTTP_ACCEPT_LANGUAGE" => "fr-FR")
       .transform_values { |value| "#{value}\xFF".force_encoding(Encoding::UTF_8) }
-    middleware = Browser::Middleware.new(->(_env) { [200, {}, []] }) do
-      redirect_to "/upgrade" if browser.chrome? && browser.accept_language.first.code == "fr"
+    middleware = Agentry::Middleware.new(->(_env) { [200, {}, []] }) do
+      redirect_to "/upgrade" if agentry.chrome? && agentry.accept_language.first.code == "fr"
     end
 
     status, = middleware.call(Rack::MockRequest.env_for("/", headers))

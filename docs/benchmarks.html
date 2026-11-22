@@ -25,6 +25,7 @@
   <nav class="site-nav" aria-label="Site">
     <a class="brand" href="./">Agentry</a>
     <a href="guide.html">Guide</a>
+    <a href="migration.html">Migration</a>
     <a href="bots.html">Bots</a>
     <a href="benchmarks.html" aria-current="page">Benchmarks</a>
     <a href="https://github.com/levups/agentry">GitHub</a>
@@ -63,9 +64,9 @@
     <section id="why" aria-labelledby="why-title">
       <h2 id="why-title">Why it is faster</h2>
       <div class="prose">
-        <p><strong>A cache per user agent.</strong> Every answer but Accept-Language depends on the user agent alone. Each process keeps, for the last 1,000 distinct user agents, the browser class <code>Browser.new</code> chose, the platform, the device and the bot answers, computed lazily; the last 1,000 Accept-Language headers are parsed once too. About 1 KB per user agent, so 1 MB per worker. <code>Browser.cache_size</code> changes the size, <code>0</code> turns it off, and changing a matcher list or the bot list empties it.</p>
-        <p><strong>Bots in one walk.</strong> browser matches the user agent against its bot list one entry at a time. Agentry walks a byte trie of the list, five times longer since the weekly sync, once per user agent, and the built-in bot matchers no longer build a second <code>Browser</code> for the same user agent.</p>
-        <p><strong>Less work on a new user agent.</strong> <code>Browser.new</code> skips, unbuilt, a browser whose required pattern fails, and platform and device matchers are built only when a request asks for them.</p>
+        <p><strong>A cache per user agent.</strong> Every answer but Accept-Language depends on the user agent alone. Each process keeps, for the last 1,000 distinct user agents, the browser class <code>Agentry.new</code> chose, the platform, the device and the bot answers, computed lazily; the last 1,000 Accept-Language headers are parsed once too. About 1 KB per user agent, so 1 MB per worker. <code>Agentry.cache_size</code> changes the size, <code>0</code> turns it off, and changing a matcher list or the bot list empties it.</p>
+        <p><strong>Bots in one walk.</strong> browser matches the user agent against its bot list one entry at a time. Agentry walks a byte trie of the list, five times longer since the weekly sync, once per user agent, and the built-in bot matchers no longer build a second <code>Agentry</code> object for the same user agent.</p>
+        <p><strong>Less work on a new user agent.</strong> <code>Agentry.new</code> skips, unbuilt, a browser whose required pattern fails, and platform and device matchers are built only when a request asks for them.</p>
       </div>
     </section>
 
