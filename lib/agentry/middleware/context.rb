@@ -18,7 +18,7 @@ module Agentry
 
       def browser
         Agentry.deprecate("browser in an Agentry::Middleware block is deprecated and goes away in 5.0: call agentry")
-        agentry
+        @browser
       end
 
       def redirect_to(path)

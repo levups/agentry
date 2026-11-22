@@ -53,6 +53,14 @@ class BrowserCompatibilityTest < Minitest::Test
     end
   end
 
+  test "a deprecation fired under -W0 still prints once warnings come back" do
+    _output, errors, status = run_ruby('require "agentry"', "$VERBOSE = nil", 'Agentry.deprecate("alice")',
+      "$VERBOSE = false", 'Agentry.deprecate("alice")')
+
+    assert status.success?, errors
+    assert_equal 1, errors.scan("alice").size
+  end
+
   test "the deprecation stays silent where Ruby hides deprecations" do
     _output, errors, status = Open3.capture3(RbConfig.ruby, "-W:no-deprecated", "-I", LIB_PATH,
       "-e", 'require "browser"')
