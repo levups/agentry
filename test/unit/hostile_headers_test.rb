@@ -66,4 +66,16 @@ class HostileHeadersTest < Minitest::Test
     refute platform.mac?("~> 15.1")
     refute platform.mac?(">= 15.1")
   end
+
+  test "answers false to a version requirement RubyGems cannot compare" do
+    browser = Agentry.new(MAC_SAFARI)
+
+    refute browser.safari?("!")
+    refute browser.platform.mac?("!")
+    refute browser.safari?("not a version")
+    refute browser.safari?(">= 1".encode("UTF-16LE"))
+    assert browser.safari?([">= 1", "< 100"])
+    assert browser.safari?(Gem::Requirement.new(">= 1", "< 100"))
+    assert browser.safari?(17)
+  end
 end

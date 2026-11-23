@@ -24,9 +24,11 @@ module Agentry
       expected_version = parse_version(expected_version)
       actual_version = parse_version(actual_version)
 
-      Gem::Requirement.create(expected_version)
-        .satisfied_by?(gem_version(actual_version))
-    rescue ArgumentError
+      requirement = Gem::Requirement.create(expected_version)
+      # RubyGems reads "!" as its source set marker, which compares nothing, and raises an EncodingError on a
+      # requirement in an encoding it can't read: neither is a requirement a version meets.
+      requirement.is_a?(Gem::Requirement) && requirement.satisfied_by?(gem_version(actual_version))
+    rescue ArgumentError, EncodingError
       false
     end
 
