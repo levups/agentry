@@ -13,9 +13,7 @@ module Agentry
       end
     end
 
-    # A browser's version is a few bytes: a longer one is not kept, so that a cached platform stays small.
-    MAX_KEPT_VERSION_BYTES = 32
-    private_constant :UncachedVersion, :MAX_KEPT_VERSION_BYTES
+    private_constant :UncachedVersion
 
     private def detect_version?(actual_version, expected_version)
       return true unless expected_version
@@ -24,19 +22,19 @@ module Agentry
       expected_version = parse_version(expected_version)
       actual_version = parse_version(actual_version)
 
-      Gem::Requirement.create(expected_version)
+      Cache.requirement(expected_version) { Gem::Requirement.create(expected_version) }
         .satisfied_by?(gem_version(actual_version))
     rescue ArgumentError
       false
     end
 
-    # The last one built: a cached platform asks for the same version on each request.
+    # The last one used: a cached platform asks for the same version on each request, also when Cache keeps none.
     private def gem_version(version)
       string, gem_version = @gem_version
       return gem_version if string == version
 
-      gem_version = UncachedVersion.create(version)
-      @gem_version = [version, gem_version] if version.bytesize <= MAX_KEPT_VERSION_BYTES
+      gem_version = Cache.version(version) { UncachedVersion.create(version) }
+      @gem_version = [version, gem_version] if version.bytesize <= Cache::MAX_CACHED_VERSION_BYTES
       gem_version
     end
 

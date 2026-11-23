@@ -175,6 +175,26 @@ class CacheTest < Minitest::Test
     Agentry::Bot.bot_exceptions.delete("cachedbot")
   end
 
+  test "compares versions alike with the cache on and off" do
+    chrome_user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
+      "Chrome/142.0.0.0 Safari/537.36"
+    long_version = "1#{".0" * 40}"
+    answers = lambda do
+      browser = Agentry.new(chrome_user_agent.sub("142.0.0.0", long_version))
+      chrome = Agentry.new(chrome_user_agent)
+      [chrome.chrome?(">= 10"), chrome.chrome?("< 10"), chrome.chrome?([">= 1", "< 1000"]), chrome.chrome?(Integer(chrome.version)),
+        chrome.chrome?("not a version"), browser.chrome?("~> 1.0"), browser.chrome?(">= 2")]
+    end
+    cached = Array.new(2) { answers.call }
+    kept_versions = %i[@requirement_by_version @gem_version_by_version]
+      .flat_map { |name| Agentry::Cache.instance_variable_get(name).keys }
+    assert_includes kept_versions, "142.0.0.0"
+    refute_includes kept_versions, long_version
+    Agentry.cache_size = 0
+
+    assert_equal [[true, false, true, true, false, true, false]] * 3, cached + [answers.call]
+  end
+
   test "parses an accept language once and hands out copies" do
     first = Agentry.new("", accept_language: "fr-FR,en;q=0.8").accept_language
     first.clear

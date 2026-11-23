@@ -1,18 +1,22 @@
 # frozen_string_literal: true
 
 module Agentry
-  # The detections of the last user agents and the parsed Accept-Language
-  # headers, shared by the threads of a process. Reads take no lock: under the
-  # GVL a Hash read is atomic, and a thread that misses detects again. Writes
-  # do, for the Rubies without a GVL.
+  # The detections of the last user agents, the parsed Accept-Language
+  # headers and the versions compared, shared by the threads of a process.
+  # Reads take no lock: under the GVL a Hash read is atomic, and a thread
+  # that misses detects again. Writes do, for the Rubies without a GVL.
   module Cache
     # Far more than a browser sends. A longer list is parsed again each time: 2 KB of "a,a,a" makes a thousand
     # objects, and a thousand such headers would hold 100 MB.
     MAX_LANGUAGES_PER_CACHED_HEADER = 32
+    # A browser sends a version of a few bytes: a longer one is built each time, so that the cache stays small.
+    MAX_CACHED_VERSION_BYTES = 32
 
     @mutex = Mutex.new
     @detection_by_user_agent = {}
     @languages_by_header = {}
+    @requirement_by_version = {}
+    @gem_version_by_version = {}
     @generation = 0
 
     def self.cached_detection(ua)
@@ -25,6 +29,27 @@ module Agentry
       cached_detection(ua) || @mutex.synchronize do
         ua = -ua
         store(@detection_by_user_agent, ua, Detection.new(ua))
+      end
+    end
+
+    # Built once: an app asks the same few requirements (">= 17") of every request, and browsers send the same few
+    # versions. The block builds one; DetectVersion keeps versions out of RubyGems' own caches.
+    def self.requirement(expected_version, &)
+      versioned(@requirement_by_version, expected_version, &)
+    end
+
+    def self.version(version, &)
+      versioned(@gem_version_by_version, version, &)
+    end
+
+    def self.versioned(value_by_version, version)
+      return yield unless version.is_a?(String) && version.bytesize <= MAX_CACHED_VERSION_BYTES &&
+        Agentry.cache_size.positive?
+
+      # Built outside the lock: a malformed version raises, and other threads keep storing meanwhile.
+      value_by_version[version] || begin
+        value = yield
+        @mutex.synchronize { store(value_by_version, -version, value) }
       end
     end
 
@@ -58,6 +83,8 @@ module Agentry
       @mutex.synchronize do
         @detection_by_user_agent.clear
         @languages_by_header.clear
+        @requirement_by_version.clear
+        @gem_version_by_version.clear
       end
     end
 
@@ -93,6 +120,6 @@ module Agentry
     end
 
     private_class_method :lists_unchanged?, :remember_lists,
-      :current_detection_by_user_agent, :store
+      :current_detection_by_user_agent, :versioned, :store
   end
 end
