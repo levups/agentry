@@ -10,13 +10,36 @@ module Agentry
     # objects, and a thousand such headers would hold 100 MB.
     MAX_LANGUAGES_PER_CACHED_HEADER = 32
 
+    # The public lists apps change at runtime (the matchers, the bot exceptions): each change counts, so that checking
+    # them costs an integer comparison on every request instead of comparing every entry.
+    class List < Array
+      # Every Array method that changes its receiver: CacheTest fails when a new Ruby adds one.
+      MUTATORS = %i[
+        << []= append clear collect! compact! concat delete delete_at delete_if fill filter! flatten! insert keep_if
+        map! pop prepend push reject! replace reverse! rotate! select! shift shuffle! slice! sort! sort_by! uniq!
+        unshift
+      ].freeze
+
+      MUTATORS.each do |name|
+        # Counted even when a block breaks out halfway, the list changed already.
+        define_method(name) do |*arguments, **options, &block|
+          super(*arguments, **options, &block)
+        ensure
+          Cache.list_changed
+        end
+      end
+    end
+
     @mutex = Mutex.new
     @detection_by_user_agent = {}
     @languages_by_header = {}
     @generation = 0
+    @list_changes = 0
+    @seen_list_changes = 0
 
     def self.cached_detection(ua)
-      current_detection_by_user_agent[ua]
+      generation
+      @detection_by_user_agent[ua]
     end
 
     def self.detection(ua)
@@ -41,17 +64,53 @@ module Agentry
       @mutex.synchronize { store(@languages_by_header, -header, languages.freeze) }.dup
     end
 
-    # Bumped when a matcher list, the bot list or its exceptions change: the
-    # matchers are public arrays that apps extend at runtime.
+    # Moves when a List changes, when a list is replaced by another object (a
+    # stub, a reset), or when the bot list grows, shrinks or is replaced: a Hash
+    # keyed by keyword, compared by identity and size like Bot.keywords_pattern.
     def self.generation
-      return @generation if lists_unchanged?
+      bots = Bot.bots
+      return @generation if @list_changes == @seen_list_changes && bots.equal?(@bots) && bots.size == @bots_size &&
+        lists_in_place?
 
+      changed
+    end
+
+    # Without a lock: an app may change a list from a signal handler, where Ruby refuses one.
+    def self.list_changed
+      @list_changes += 1
+    end
+
+    def self.changed
       @mutex.synchronize do
-        @generation += 1
+        # Emptied before the lists are recorded as seen: a reader in between still finds them changed.
+        list_changes = @list_changes
         @detection_by_user_agent.clear
-        remember_lists
+        generation = @generation += 1
+        @seen_list_changes = list_changes
+        @bots = Bot.bots
+        @bots_size = @bots.size
+        @browser_matchers = remembered(Agentry.matchers)
+        @platform_matchers = remembered(Platform.matchers)
+        @device_matchers = remembered(Device.matchers)
+        @bot_matchers = remembered(Bot.matchers)
+        @bot_exceptions = remembered(Bot.bot_exceptions)
+        generation
       end
-      @generation
+    end
+
+    def self.lists_in_place?
+      in_place?(Agentry.matchers, @browser_matchers) && in_place?(Platform.matchers, @platform_matchers) &&
+        in_place?(Device.matchers, @device_matchers) && in_place?(Bot.matchers, @bot_matchers) &&
+        in_place?(Bot.bot_exceptions, @bot_exceptions)
+    end
+
+    # A List counts its changes; any other Array put in its place is compared entry by entry.
+    def self.remembered(list)
+      list.instance_of?(List) ? list : list.dup.freeze
+    end
+
+    def self.in_place?(list, remembered)
+      list.instance_of?(List) ? list.equal?(remembered) : list == remembered
     end
 
     def self.clear
@@ -61,38 +120,11 @@ module Agentry
       end
     end
 
-    # The bot list holds hundreds of entries: compared by identity and size,
-    # like Bot.keywords_pattern, not entry by entry on every request.
-    def self.lists_unchanged?
-      @browser_matchers == Agentry.matchers &&
-        @platform_matchers == Platform.matchers &&
-        @device_matchers == Device.matchers &&
-        @bot_matchers == Bot.matchers &&
-        @bot_exceptions == Bot.bot_exceptions &&
-        @bots.equal?(Bot.bots) && @bots_size == Bot.bots.size
-    end
-
-    def self.remember_lists
-      @browser_matchers = Agentry.matchers.dup
-      @platform_matchers = Platform.matchers.dup
-      @device_matchers = Device.matchers.dup
-      @bot_matchers = Bot.matchers.dup
-      @bot_exceptions = Bot.bot_exceptions.dup
-      @bots = Bot.bots
-      @bots_size = Bot.bots.size
-    end
-
-    def self.current_detection_by_user_agent
-      generation
-      @detection_by_user_agent
-    end
-
     def self.store(value_by_key, key, value)
       value_by_key.clear if value_by_key.size >= Agentry.cache_size
       value_by_key[key] = value
     end
 
-    private_class_method :lists_unchanged?, :remember_lists,
-      :current_detection_by_user_agent, :store
+    private_class_method :changed, :lists_in_place?, :remembered, :in_place?, :store
   end
 end
