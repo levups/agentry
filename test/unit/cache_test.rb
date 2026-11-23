@@ -175,6 +175,40 @@ class CacheTest < Minitest::Test
     Agentry::Bot.bot_exceptions.delete("cachedbot")
   end
 
+  test "answers again when a bot exception is replaced in place" do
+    exception = Agentry::Bot.bot_exceptions.first
+    assert Agentry.new("cachedbot/1.0").bot?
+
+    Agentry::Bot.bot_exceptions[0] = "cachedbot"
+    refute Agentry.new("cachedbot/1.0").bot?
+  ensure
+    Agentry::Bot.bot_exceptions[0] = exception
+  end
+
+  test "finds a search engine renamed in place once the cache size is set" do
+    search_engines = Agentry::Bot.search_engines.dup
+    refute Agentry::Bot.new("renamedengine/1.0").search_engine?
+
+    Agentry::Bot.search_engines.delete(search_engines.keys.first)
+    Agentry::Bot.search_engines["renamedengine"] = "Renamed Engine"
+    Agentry.cache_size = 1000
+    assert Agentry::Bot.new("renamedengine/1.0").search_engine?
+  ensure
+    Agentry::Bot.search_engines.replace(search_engines)
+  end
+
+  test "names a bot renamed in place once the cache size is set, as the README says" do
+    bots = Agentry::Bot.bots.dup
+    refute Agentry.new("Mozilla/5.0 renamedfoo/1.0").bot?
+
+    Agentry::Bot.bots.delete(bots.keys.first)
+    Agentry::Bot.bots["renamedfoo"] = "Renamed Foo"
+    Agentry.cache_size = 1000
+    assert_equal "Renamed Foo", Agentry.new("Mozilla/5.0 renamedfoo/1.0").bot.name
+  ensure
+    Agentry::Bot.bots.replace(bots)
+  end
+
   test "parses an accept language once and hands out copies" do
     first = Agentry.new("", accept_language: "fr-FR,en;q=0.8").accept_language
     first.clear

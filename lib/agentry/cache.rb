@@ -54,7 +54,9 @@ module Agentry
       @generation
     end
 
+    # The bot patterns first: a request between the two would cache an answer from the old ones.
     def self.clear
+      Bot.rebuild_keywords
       @mutex.synchronize do
         @detection_by_user_agent.clear
         @languages_by_header.clear

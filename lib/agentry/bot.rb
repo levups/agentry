@@ -44,38 +44,62 @@ module Agentry
     end
 
     # One regexp per keyword list (an Array, or a Hash keyed by keyword),
-    # rebuilt when the list grows or is replaced.
+    # rebuilt when the list is replaced or changes: the few bot exceptions are
+    # compared entry by entry, a Hash by its size, and rebuild_keywords
+    # compares every list after an entry renamed in place.
     def self.keywords_pattern(keywords)
       @keywords_pattern_by_list ||= {}.compare_by_identity
-      size, pattern = @keywords_pattern_by_list[keywords]
-      return pattern if size == keywords.size
+      words, pattern = @keywords_pattern_by_list[keywords]
+      return pattern if words && (keywords.is_a?(Hash) ? words.size == keywords.size : words == keywords)
 
-      words = (keywords.is_a?(Hash) ? keywords.keys : keywords).map(&:to_s)
-      pattern = Regexp.new(trie_source(words))
-      @keywords_pattern_by_list[keywords] = [keywords.size, pattern]
+      build_keywords_pattern(keywords)
+    end
+
+    # From one copy of the list, kept with the pattern: another thread may change the list meanwhile.
+    def self.build_keywords_pattern(keywords)
+      words = (keywords.is_a?(Hash) ? keywords.keys : keywords.dup).freeze
+      pattern = Regexp.new(trie_source(words.map(&:to_s)))
+      @keywords_pattern_by_list[keywords] = [words, pattern]
       pattern
+    end
+
+    # Run by Agentry.cache_size=: rebuilds at once the patterns and trie whose
+    # list changed in place, and only those, so that a cache size set after
+    # Agentry.eager_load! leaves nothing for the first request.
+    def self.rebuild_keywords
+      # Over a copy: a request may build another list's pattern meanwhile.
+      @keywords_pattern_by_list&.to_a&.each do |keywords, (words, _pattern)|
+        build_keywords_pattern(keywords) unless (keywords.is_a?(Hash) ? keywords.keys : keywords) == words
+      end
+      list, keywords, = @known_bots_trie
+      build_known_bots_trie if list && list.keys != keywords
     end
 
     # bots.yml keywords nested by byte, each end holding the keyword's rank.
     # Walked from each byte of a user agent, it follows the few branches that
     # byte opens, where a regexp of a thousand keywords tries most of them.
     def self.known_bots_trie
-      list, size, trie = @known_bots_trie
-      return trie if list.equal?(bots) && size == bots.size
+      list, keywords, trie = @known_bots_trie
+      return trie if list.equal?(bots) && keywords.size == bots.size
 
-      trie = {keywords: bots.keys}
+      build_known_bots_trie
+    end
+
+    def self.build_known_bots_trie
+      list = bots
+      trie = {keywords: list.keys.freeze}
       trie[:keywords].each_with_index do |keyword, rank|
         leaf = keyword.to_s.each_byte.reduce(trie) { |node, byte| node[byte] ||= {} }
         leaf[:rank] ||= rank
       end
-      @known_bots_trie = [bots, bots.size, trie]
+      @known_bots_trie = [list, trie[:keywords], trie]
       trie
     end
+    private_class_method :build_keywords_pattern, :build_known_bots_trie
 
     # The rank of a bots.yml keyword the user agent holds: the lowest, or the
     # first one found when `lowest: false`.
-    def self.known_bot_rank(ua, lowest: true)
-      trie = known_bots_trie
+    def self.known_bot_rank(ua, lowest: true, trie: known_bots_trie)
       found = nil
       ua.bytesize.times do |start|
         node = trie
@@ -192,9 +216,11 @@ module Agentry
       IPRanges.include?(owner, ip) || (reverse_dns && IPRanges.verified_by_dns?(owner, ip))
     end
 
+    # The rank and its keyword from the same trie: another thread may rebuild it meanwhile.
     private def known_bot_keyword
-      rank = self.class.known_bot_rank(ua)
-      self.class.known_bots_trie[:keywords][rank] if rank
+      trie = self.class.known_bots_trie
+      rank = self.class.known_bot_rank(ua, trie:)
+      trie[:keywords][rank] if rank
     end
 
     private def bot_exception?
