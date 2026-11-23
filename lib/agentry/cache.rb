@@ -1,18 +1,22 @@
 # frozen_string_literal: true
 
 module Agentry
-  # The detections of the last user agents and the parsed Accept-Language
-  # headers, shared by the threads of a process. Reads take no lock: under the
+  # The detections of the last user agents, the parsed Accept-Language
+  # headers and Client Hints, shared by the threads of a process. Reads take no lock: under the
   # GVL a Hash read is atomic, and a thread that misses detects again. Writes
   # do, for the Rubies without a GVL.
   module Cache
     # Far more than a browser sends. A longer list is parsed again each time: 2 KB of "a,a,a" makes a thousand
     # objects, and a thousand such headers would hold 100 MB.
     MAX_LANGUAGES_PER_CACHED_HEADER = 32
+    # A browser names 3 brands: a forged Sec-CH-UA naming dozens is parsed each time, so that an entry stays small.
+    MAX_BRANDS_PER_CACHED_HINTS = 8
 
     @mutex = Mutex.new
     @detection_by_user_agent = {}
     @languages_by_header = {}
+    @client_hints_by_values = {}
+    @client_hints_count = 0
     @generation = 0
 
     def self.cached_detection(ua)
@@ -41,6 +45,33 @@ module Agentry
       @mutex.synchronize { store(@languages_by_header, -header, languages.freeze) }.dup
     end
 
+    # Keyed by the hint headers, which a Chromium browser sends alike on
+    # each request: ClientHints is frozen, so every request shares it.
+    def self.client_hints(headers)
+      values = ClientHints.header_values(headers)
+      return ClientHints::NONE if values.all?(&:nil?)
+      return ClientHints.new(headers) if Agentry.cache_size.zero?
+
+      # One Hash level per header, each keyed by a String: an Array key would be hashed and compared in Ruby, where
+      # another thread can change the Hash halfway through a read that takes no lock.
+      client_hints = @client_hints_by_values.dig(*values)
+      return client_hints if client_hints
+
+      client_hints = ClientHints.new(headers)
+      return client_hints if client_hints.brand_count > MAX_BRANDS_PER_CACHED_HINTS
+
+      @mutex.synchronize do
+        if @client_hints_count >= Agentry.cache_size
+          @client_hints_by_values = {}
+          @client_hints_count = 0
+        end
+        *headers, platform_version = values.map { |value| value && -value }
+        headers.reduce(@client_hints_by_values) { |level, value| level[value] ||= {} }[platform_version] = client_hints
+        @client_hints_count += 1
+        client_hints
+      end
+    end
+
     # Bumped when a matcher list, the bot list or its exceptions change: the
     # matchers are public arrays that apps extend at runtime.
     def self.generation
@@ -58,6 +89,8 @@ module Agentry
       @mutex.synchronize do
         @detection_by_user_agent.clear
         @languages_by_header.clear
+        @client_hints_by_values = {}
+        @client_hints_count = 0
       end
     end
 
