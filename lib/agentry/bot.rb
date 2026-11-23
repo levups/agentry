@@ -5,6 +5,8 @@ module Agentry
     GENERIC_NAME = "Generic Bot"
     AI_CATEGORIES = %i[ai_agent ai_assistant ai_crawler ai_search].freeze
     USER_TRIGGERED_CATEGORIES = %i[ai_agent ai_assistant].freeze
+    # The shortest bots.yml keyword: a shorter one an app adds shortens the prefixes.
+    MAX_PREFIX_BYTES = 4
 
     def self.matchers
       @matchers ||= default_matchers
@@ -56,19 +58,30 @@ module Agentry
       pattern
     end
 
-    # bots.yml keywords nested by byte, each end holding the keyword's rank.
-    # Walked from each byte of a user agent, it follows the few branches that
-    # byte opens, where a regexp of a thousand keywords tries most of them.
+    # bots.yml keywords nested by byte, each end holding the keyword's rank: a
+    # walk follows the few branches a byte opens, where a regexp of a thousand
+    # keywords tries most of them. It starts only where the bytes read so far,
+    # as one Integer, equal the start of a keyword, from the node they reach.
     def self.known_bots_trie
       list, size, trie = @known_bots_trie
       return trie if list.equal?(bots) && size == bots.size
 
-      trie = {keywords: bots.keys}
-      trie[:keywords].each_with_index do |keyword, rank|
-        leaf = keyword.to_s.each_byte.reduce(trie) { |node, byte| node[byte] ||= {} }
+      # One read of the list: an app may add a bot from another thread meanwhile.
+      list = bots
+      keywords = list.keys
+      byte_lists = keywords.map { |keyword| keyword.to_s.bytes }
+      prefix_bytes = byte_lists.filter_map { |bytes| bytes.size.nonzero? }.push(MAX_PREFIX_BYTES).min
+      trie = {keywords:, prefix_bytes:, prefixes: {}}
+      byte_lists.each_with_index do |bytes, rank|
+        # An app may add an empty keyword: it never matches, the walk reads a rank one byte in.
+        next if bytes.empty?
+
+        leaf = bytes.reduce(trie) { |node, byte| node[byte] ||= {} }
         leaf[:rank] ||= rank
+        head = bytes.first(prefix_bytes)
+        trie[:prefixes][head.reduce(0) { |prefix, byte| (prefix << 8) | byte }] = trie.dig(*head)
       end
-      @known_bots_trie = [bots, bots.size, trie]
+      @known_bots_trie = [list, keywords.size, trie]
       trie
     end
 
@@ -76,17 +89,24 @@ module Agentry
     # first one found when `lowest: false`.
     def self.known_bot_rank(ua, lowest: true)
       trie = known_bots_trie
+      prefixes = trie[:prefixes]
+      prefix_bytes = trie[:prefix_bytes]
+      mask = (1 << (8 * prefix_bytes)) - 1
+      prefix = 0
       found = nil
-      ua.bytesize.times do |start|
-        node = trie
-        position = start
-        while (node = node[ua.getbyte(position)])
+      ua.bytesize.times do |index|
+        prefix = ((prefix << 8) | ua.getbyte(index)) & mask
+        next unless index + 1 >= prefix_bytes && (node = prefixes[prefix])
+
+        position = index + 1
+        while node
           rank = node[:rank]
           if rank
             return rank unless lowest
 
             found = rank if found.nil? || rank < found
           end
+          node = node[ua.getbyte(position)]
           position += 1
         end
       end

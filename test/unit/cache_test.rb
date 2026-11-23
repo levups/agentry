@@ -166,6 +166,16 @@ class CacheTest < Minitest::Test
     Agentry::Bot.bots.delete("cachedbot")
   end
 
+  test "names a bot by a keyword shorter than the bots.yml ones" do
+    refute Agentry.new("Mozilla/5.0 qz/1.0").bot?
+
+    Agentry::Bot.bots["qz/"] = "QZ"
+    assert_equal "QZ", Agentry.new("Mozilla/5.0 qz/1.0").bot.name
+    assert_equal "QZ", Agentry.new("qz/1.0").bot.name
+  ensure
+    Agentry::Bot.bots.delete("qz/")
+  end
+
   test "answers again when a bot exception is added" do
     assert Agentry.new("cachedbot/1.0").bot?
 

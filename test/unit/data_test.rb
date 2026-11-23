@@ -26,6 +26,11 @@ class DataTest < Minitest::Test
     end
   end
 
+  # A shorter one still matches, but every user agent then pays a narrower window in Bot.known_bot_rank.
+  test "keeps every bots.yml keyword 4 bytes or longer" do
+    assert_empty YAML.load_file(Agentry.root.join("bots.yml")).keys.select { |keyword| keyword.to_s.bytesize < 4 }
+  end
+
   test "load_yaml reads a bundled list from its JSON" do
     bots = YAML.load_file(Agentry.root.join("bots.yml"))
 
