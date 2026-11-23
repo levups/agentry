@@ -220,12 +220,14 @@ class CacheTest < Minitest::Test
     end
   end
 
-  test "skips a browser only when its match? could not be true" do
+  test "skips a browser, platform or device only when its match? could not be true" do
     corpus = File.foreach(Agentry.root.join("corpus/user_agents.txt"),
       chomp: true)
     user_agents = Agentry.user_agents.values + corpus.to_a
+    required_patterns = [Agentry, Agentry::Platform, Agentry::Device]
+      .flat_map { |detector| detector.const_get(:REQUIRED_PATTERN_BY_MATCHER).to_a }
 
-    Agentry::REQUIRED_PATTERN_BY_MATCHER.each do |matcher_class, pattern|
+    required_patterns.each do |matcher_class, pattern|
       user_agents.each do |user_agent|
         next if user_agent.bytesize >= Agentry.user_agent_size_limit
         next unless matcher_class.new(user_agent).match?

@@ -232,6 +232,9 @@ The cache empties itself when it is full, and when `Agentry.matchers`, `Agentry:
 Agentry.cache_size = 5_000 # 0 turns it off
 ```
 
+A built-in browser, platform or device matcher is only tried on a user agent holding the pattern it looks for. To
+make one accept more, subclass it and put the subclass in its list instead of reopening its `match?`.
+
 A user agent or an `Accept-Language` header longer than 2048 bytes raises `Agentry::Error`. Both limits can be
 raised with `Agentry.user_agent_size_limit = 4096` and `Agentry.accept_language_size_limit = 4096`. An
 `Accept-Language` header listing more than 32 languages is parsed on each request instead of cached, so that
