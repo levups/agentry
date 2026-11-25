@@ -80,7 +80,7 @@ jobs:
     steps: *test-steps
 
   docs:
-    name: Highlighted docs
+    name: Docs
     if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -96,6 +96,8 @@ jobs:
           bundler-cache: true
       - name: Check the highlighted docs
         run: bundle exec rake docs:highlight:check
+      - name: Check llms.txt and llms-full.txt
+        run: bundle exec rake docs:llms:check
       # This gem's own: the site's numbers come from docs/benchmarks.json and docs/bot_coverage.json.
       - name: Check the rendered docs
         run: bundle exec rake docs:render:check
