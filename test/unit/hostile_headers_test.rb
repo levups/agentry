@@ -76,7 +76,8 @@ class HostileHeadersTest < Minitest::Test
     assert browser.safari?(">= 1".encode("UTF-16LE"))
     assert browser.safari?([">= 1".encode("UTF-32BE")])
     refute browser.safari?(">= 100".encode("UTF-16LE"))
-    refute browser.safari?(">= 1\xFF".dup.force_encoding("UTF-16LE"))
+    # An unpaired surrogate: UTF-16 that can't be read as UTF-8.
+    refute browser.safari?((">= 1".encode("UTF-16LE").b + "\x00\xD8".b).force_encoding("UTF-16LE"))
     assert browser.safari?([">= 1", "< 100"])
     assert browser.safari?(Gem::Requirement.new(">= 1", "< 100"))
     assert browser.safari?(17)

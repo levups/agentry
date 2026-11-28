@@ -38,6 +38,7 @@ module Agentry
       return gem_version if string == version
 
       gem_version = UncachedVersion.create(version)
+      # An app's browser class may return a Gem::Version, and a frozen browser can't remember.
       kept = version.is_a?(String) && version.bytesize <= MAX_KEPT_VERSION_BYTES && !frozen?
       @gem_version = [version, gem_version] if kept
       gem_version
@@ -49,7 +50,6 @@ module Agentry
       return version.to_s if version.is_a?(Numeric)
       return version.flatten.map! { |requirement| parse_version(requirement) } if version.is_a?(Array)
 
-      version = version.to_str if !version.is_a?(String) && version.respond_to?(:to_str)
       return version unless version.is_a?(String) && !version.encoding.ascii_compatible?
 
       version.encode(Encoding::UTF_8)
