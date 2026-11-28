@@ -292,7 +292,11 @@ class CacheTest < Minitest::Test
 
   test "a subclass of Bot names a bot renamed in place once the cache size is set" do
     bots = Agentry::Bot.bots.dup
-    subclass = Class.new(Agentry::Bot) { def self.bots = Agentry::Bot.bots }
+    subclass = Class.new(Agentry::Bot) do
+      def self.bots
+        Agentry::Bot.bots
+      end
+    end
     assert_equal "Google Bot", subclass.new("Googlebot/2.1").name
 
     Agentry::Bot.bots.delete(bots.keys.first)
