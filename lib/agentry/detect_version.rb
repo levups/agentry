@@ -47,7 +47,7 @@ module Agentry
     # first: Array#flatten raises an ArgumentError on an array that holds itself.
     private def parse_version(version)
       return version.to_s if version.is_a?(Numeric)
-      return version.flatten.map { |requirement| parse_version(requirement) } if version.is_a?(Array)
+      return version.flatten.map! { |requirement| parse_version(requirement) } if version.is_a?(Array)
 
       version = version.to_str if !version.is_a?(String) && version.respond_to?(:to_str)
       return version unless version.is_a?(String) && !version.encoding.ascii_compatible?
