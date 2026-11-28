@@ -238,6 +238,9 @@ The cache empties itself when it is full, and when `Agentry.matchers`, `Agentry:
 Agentry.cache_size = 5_000 # 0 turns it off
 ```
 
+A built-in browser, platform or device matcher is only tried on a user agent holding the pattern it looks for. To
+make one accept more, subclass it and put the subclass in its list instead of reopening its `match?`.
+
 A user agent or an `Accept-Language` header longer than 2048 bytes raises `Agentry::Error`. Both limits can be
 raised with `Agentry.user_agent_size_limit = 4096` and `Agentry.accept_language_size_limit = 4096`. An
 `Accept-Language` header listing more than 32 languages is parsed on each request instead of cached, so that
@@ -1004,7 +1007,7 @@ Ruby 4.0.9, Apple M4 Max, measured on 2026-11-04: browser 6.2.0 at `dd88933`, Ag
 
 **Bots in one walk.** browser matches the user agent against its bot list one entry at a time. Agentry walks a byte trie of the list, five times longer since the weekly sync, once per user agent, and the built-in bot matchers no longer build a second `Agentry` object for the same user agent.
 
-**Less work on a new user agent.** `Agentry.new` skips, unbuilt, a browser whose required pattern fails, and platform and device matchers are built only when a request asks for them.
+**Less work on a new user agent.** `Agentry.new` skips, unbuilt, a browser whose required pattern fails, platforms and devices do the same, and platform and device matchers are built only when a request asks for them.
 
 ### Reproduce
 

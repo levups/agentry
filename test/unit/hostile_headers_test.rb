@@ -30,6 +30,19 @@ class HostileHeadersTest < Minitest::Test
     assert Agentry.new(invalid_utf8("Googlebot/2.1 ")).bot?
   end
 
+  test "Platform.new reads an Android user agent that is not valid UTF-8, as browser did" do
+    assert_equal :android, Agentry::Platform.new(invalid_utf8("Mozilla/5.0 (Linux; Android 10) ")).id
+  end
+
+  test "Device.new reads a user agent that is not valid UTF-8 where its matchers did, as browser did" do
+    matchers = Agentry::Device.matchers.dup
+    Agentry::Device.matchers.replace([Agentry::Device::Ipad, Agentry::Device::Unknown])
+
+    assert_equal :ipad, Agentry::Device.new(invalid_utf8("Mozilla/5.0 (iPad; CPU OS 17_0) ")).id
+  ensure
+    Agentry::Device.matchers.replace(matchers)
+  end
+
   test "Bot.why? reads a user agent that is not valid UTF-8" do
     assert_equal Agentry::Bot::KnownBotsMatcher, Agentry::Bot.why?(invalid_utf8("Googlebot/2.1 "))
   end

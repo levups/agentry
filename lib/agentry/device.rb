@@ -69,8 +69,37 @@ module Agentry
       self.class.new(ua, platform:, client_hints:).tap { |device| device.subject = subject }
     end
 
+    # What every user agent a built-in device matches holds: a device whose
+    # pattern fails is skipped without being built. A String where its match?
+    # calls include?, which reads invalid UTF-8 a Regexp raises on.
+    REQUIRED_PATTERN_BY_MATCHER = {
+      Samsung => /SM-/i,
+      XboxOne => /Xbox One/i,
+      Xbox360 => /Xbox/i,
+      Surface => "Touch",
+      TV => /\btv|ADT-1|Nexus Player/i,
+      BlackBerryPlaybook => /PlayBook/,
+      WiiU => /Nintendo WiiU/i,
+      Wii => /Nintendo Wii/i,
+      Switch => /Nintendo Switch/i,
+      KindleFire => /Kindle Fire|KFTT/,
+      Kindle => "Kindle",
+      PlayStation4 => /PLAYSTATION 4/i,
+      PlayStation3 => /PLAYSTATION 3/i,
+      PSVita => "Playstation Vita",
+      PSP => "PlayStation Portable",
+      Ipad => "iPad",
+      Iphone => "iPhone",
+      IpodTouch => "iPod",
+      Android => "Android"
+    }.compare_by_identity.freeze
+
     def subject
       @subject ||= self.class.matchers.each do |matcher|
+        required_pattern = REQUIRED_PATTERN_BY_MATCHER[matcher]
+        next unless required_pattern.nil? ||
+          (required_pattern.is_a?(String) ? ua.include?(required_pattern) : required_pattern.match?(ua))
+
         candidate = matcher.new(ua)
         break candidate if candidate.match?
       end
@@ -224,7 +253,7 @@ module Agentry
       .group_by { |prefix| prefix.getbyte(0) }
       .transform_values { |prefixes| Regexp.new("\\A(?:#{prefixes.join("|")})") }
       .freeze
-    private_constant :MOBILE_REGEX, :MOBILE_PREFIX_REGEX, :MOBILE_LOWERCASE_REGEX,
+    private_constant :REQUIRED_PATTERN_BY_MATCHER, :MOBILE_REGEX, :MOBILE_PREFIX_REGEX, :MOBILE_LOWERCASE_REGEX,
       :MOBILE_PREFIX_LOWERCASE_REGEX_BY_FIRST_BYTE
 
     private def detect_mobile?

@@ -200,8 +200,32 @@ module Agentry
       windows? && ua.include?("Touch")
     end
 
+    # What every user agent a built-in platform matches holds: a platform
+    # whose pattern fails is skipped without being built. A String where its
+    # match? calls include?, which reads invalid UTF-8 a Regexp raises on (as
+    # FirefoxOS#match? does first).
+    REQUIRED_PATTERN_BY_MATCHER = {
+      AdobeAir => "AdobeAIR",
+      ChromeOS => "CrOS",
+      WindowsMobile => "Windows CE",
+      WindowsPhone => "Windows Phone",
+      Android => "Android",
+      BlackBerry => /BB10|BlackBerry/,
+      IOS => IOS::MATCHER,
+      Mac => "Mac",
+      KaiOS => "KAIOS",
+      FirefoxOS => /Firefox/,
+      Windows => "Windows",
+      Linux => "Linux"
+    }.compare_by_identity.freeze
+    private_constant :REQUIRED_PATTERN_BY_MATCHER
+
     private def detect_subject
       self.class.matchers.each do |matcher|
+        required_pattern = REQUIRED_PATTERN_BY_MATCHER[matcher]
+        next unless required_pattern.nil? ||
+          (required_pattern.is_a?(String) ? ua.include?(required_pattern) : required_pattern.match?(ua))
+
         candidate = matcher.new(ua, self)
         break candidate if candidate.match?
       end
