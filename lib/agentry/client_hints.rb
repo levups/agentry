@@ -6,7 +6,7 @@ module Agentry
   class ClientHints
     # A browser's hints are a few dozen bytes: longer values, and invalid UTF-8, are ignored.
     HEADER_SIZE_LIMIT_BYTES = 512
-    # In the order #initialize reads them; Cache.client_hints keys its entries on them.
+    # In the order #initialize reads them; Cache.client_hints keys its entries on them. :nodoc:
     HEADER_NAMES = %w[HTTP_SEC_CH_UA HTTP_SEC_CH_UA_MOBILE HTTP_SEC_CH_UA_PLATFORM HTTP_SEC_CH_UA_PLATFORM_VERSION]
       .freeze
     PLATFORM_CLASS_BY_NAME = {
@@ -42,19 +42,26 @@ module Agentry
       @platform_version&.dup
     end
 
-    def brand_count
+    def platform_version?
+      !@platform_version.nil?
+    end
+
+    def brand_count # :nodoc:
       @version_by_brand.size
     end
 
-    def self.header_values(headers)
+    # The four values, read once. A value in UTF-16, which the patterns can't read, is ignored like invalid UTF-8.
+    def self.header_values(headers) # :nodoc:
       HEADER_NAMES.map do |name|
         value = headers[name]
-        value if value.is_a?(String) && value.bytesize <= HEADER_SIZE_LIMIT_BYTES && value.valid_encoding?
+        value if value.is_a?(String) && value.bytesize <= HEADER_SIZE_LIMIT_BYTES && value.valid_encoding? &&
+          value.encoding.ascii_compatible?
       end
     end
 
-    def initialize(headers)
-      brands, mobile, platform, platform_version = self.class.header_values(headers)
+    # The values Cache.client_hints already read, if given.
+    def initialize(headers, values = self.class.header_values(headers))
+      brands, mobile, platform, platform_version = values
       @version_by_brand = parse_brands(brands)
       @mobile = MOBILE_BY_VALUE[mobile&.strip]
       @platform = quoted_string(platform)

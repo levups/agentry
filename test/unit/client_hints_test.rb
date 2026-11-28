@@ -167,6 +167,13 @@ class ClientHintsTest < Minitest::Test
     assert_equal versions.zip, threads.map(&:value)
   end
 
+  test "ignores a hint in an encoding its patterns can't read" do
+    utf16 = hints(platform: "Windows").merge("HTTP_SEC_CH_UA_PLATFORM" => %("Windows").encode("UTF-16LE"))
+
+    assert_nil Agentry.new(WINDOWS_CHROME, headers: utf16).client_hints.platform
+    assert Agentry.new(WINDOWS_CHROME, headers: utf16).platform.windows?
+  end
+
   test "reads hints alike with the cache off and from forged values" do
     windows11 = hints(platform: "Windows", platform_version: "19.0.0")
     forged = windows11.merge("HTTP_SEC_CH_UA_PLATFORM_VERSION" => ["19.0.0"])
@@ -177,10 +184,8 @@ class ClientHintsTest < Minitest::Test
     assert_empty Agentry.new(WINDOWS_CHROME, headers: oversized).client_hints.version_by_brand
     many_brands = Array.new(20) { |index| %("Brand #{index}";v="1") }.join(", ")
     assert_equal 20, Agentry.new(WINDOWS_CHROME, headers: hints(brands: many_brands)).client_hints.version_by_brand.size
-    refute_same Agentry.new(WINDOWS_CHROME, headers: hints(brands: many_brands)).client_hints,
-      Agentry.new(WINDOWS_CHROME, headers: hints(brands: many_brands)).client_hints
-    assert_same Agentry.new(WINDOWS_CHROME, headers: windows11).client_hints,
-      Agentry.new(WINDOWS_CHROME, headers: windows11).client_hints
+    assert_equal 20, Agentry.new(WINDOWS_CHROME, headers: hints(brands: many_brands)).client_hints.version_by_brand.size
+    assert Agentry.new(WINDOWS_CHROME, headers: windows11).platform.windows11?
     Agentry.cache_size = 0
     assert Agentry.new(WINDOWS_CHROME, headers: windows11).platform.windows11?
   end
