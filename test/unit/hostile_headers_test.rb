@@ -82,6 +82,17 @@ class HostileHeadersTest < Minitest::Test
     assert browser.safari?(17)
   end
 
+  test "answers false to a requirement that holds itself, and reads a deeply nested one" do
+    browser = Agentry.new(MAC_SAFARI)
+    itself = [">= 1"]
+    itself << itself
+    deep = ">= 1"
+    100_000.times { deep = [deep] }
+
+    refute browser.safari?(itself)
+    assert browser.safari?(deep)
+  end
+
   test "checks a version on a frozen browser" do
     browser = Agentry.new(MAC_SAFARI).freeze
 

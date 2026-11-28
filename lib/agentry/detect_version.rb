@@ -38,18 +38,21 @@ module Agentry
       return gem_version if string == version
 
       gem_version = UncachedVersion.create(version)
-      @gem_version = [version, gem_version] if version.bytesize <= MAX_KEPT_VERSION_BYTES && !frozen?
+      kept = version.is_a?(String) && version.bytesize <= MAX_KEPT_VERSION_BYTES && !frozen?
+      @gem_version = [version, gem_version] if kept
       gem_version
     end
 
-    # RubyGems reads a requirement in an ASCII-compatible encoding only: ">= 1" in UTF-16 is still ">= 1".
+    # RubyGems reads a requirement in an ASCII-compatible encoding only: ">= 1" in UTF-16 is still ">= 1". Flattened
+    # first: Array#flatten raises an ArgumentError on an array that holds itself.
     private def parse_version(version)
-      case version
-      when Numeric then version.to_s
-      when String then version.encoding.ascii_compatible? ? version : version.encode(Encoding::UTF_8)
-      when Array then version.map { |requirement| parse_version(requirement) }
-      else version
-      end
+      return version.to_s if version.is_a?(Numeric)
+      return version.flatten.map { |requirement| parse_version(requirement) } if version.is_a?(Array)
+
+      version = version.to_str if !version.is_a?(String) && version.respond_to?(:to_str)
+      return version unless version.is_a?(String) && !version.encoding.ascii_compatible?
+
+      version.encode(Encoding::UTF_8)
     end
   end
 end
