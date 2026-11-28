@@ -5,6 +5,8 @@ module Agentry
     GENERIC_NAME = "Generic Bot"
     AI_CATEGORIES = %i[ai_agent ai_assistant ai_crawler ai_search].freeze
     USER_TRIGGERED_CATEGORIES = %i[ai_agent ai_assistant].freeze
+    # The shortest bots.yml keyword: a shorter one an app adds shortens the prefixes.
+    MAX_PREFIX_BYTES = 4
 
     def self.matchers
       @matchers ||= default_matchers
@@ -43,50 +45,124 @@ module Agentry
         end
     end
 
+    # Builds and Agentry.cache_size='s rebuild hold this lock, shared with the
+    # subclasses, and check again under it; reads take none, like the Cache.
+    # Each class keeps what it built, freed with the class.
+    KEYWORDS_LOCK = Mutex.new
+    # Lists an app builds on each call would pile up.
+    MAX_LISTS = 64
+    private_constant :KEYWORDS_LOCK, :MAX_LISTS
+
     # One regexp per keyword list (an Array, or a Hash keyed by keyword),
-    # rebuilt when the list grows or is replaced.
+    # rebuilt when the list is replaced or changes: an Array, such as the few
+    # bot exceptions, is compared entry by entry, any other list by its size,
+    # and rebuild_keywords compares every list after an entry renamed in place.
     def self.keywords_pattern(keywords)
-      @keywords_pattern_by_list ||= {}.compare_by_identity
-      size, pattern = @keywords_pattern_by_list[keywords]
-      return pattern if size == keywords.size
+      built_from, pattern = @pattern_by_list&.[](keywords)
+      return pattern if built_from && unchanged?(keywords, built_from)
 
-      words = (keywords.is_a?(Hash) ? keywords.keys : keywords).map(&:to_s)
-      pattern = Regexp.new(trie_source(words))
-      @keywords_pattern_by_list[keywords] = [keywords.size, pattern]
-      pattern
-    end
+      KEYWORDS_LOCK.synchronize do
+        @pattern_by_list ||= {}.compare_by_identity
+        built_from, pattern = @pattern_by_list[keywords]
+        next pattern if built_from && unchanged?(keywords, built_from)
 
-    # bots.yml keywords nested by byte, each end holding the keyword's rank.
-    # Walked from each byte of a user agent, it follows the few branches that
-    # byte opens, where a regexp of a thousand keywords tries most of them.
-    def self.known_bots_trie
-      list, size, trie = @known_bots_trie
-      return trie if list.equal?(bots) && size == bots.size
-
-      trie = {keywords: bots.keys}
-      trie[:keywords].each_with_index do |keyword, rank|
-        leaf = keyword.to_s.each_byte.reduce(trie) { |node, byte| node[byte] ||= {} }
-        leaf[:rank] ||= rank
+        @pattern_by_list.clear if @pattern_by_list.size >= MAX_LISTS
+        (@pattern_by_list[keywords] = build_keywords_pattern(keywords)).last
       end
-      @known_bots_trie = [bots, bots.size, trie]
-      trie
     end
+
+    # bots.yml keywords nested by byte, each end holding the keyword's rank: a
+    # walk follows the few branches a byte opens, where a regexp of a thousand
+    # keywords tries most of them. It starts only where the bytes read so far,
+    # as one Integer, equal the start of a keyword, from the node they reach.
+    def self.known_bots_trie
+      list = bots
+      built_list, built_from, trie = @known_bots_trie
+      return trie if built_list.equal?(list) && unchanged?(list, built_from)
+
+      KEYWORDS_LOCK.synchronize do
+        built_list, built_from, trie = @known_bots_trie
+        next trie if built_list.equal?(list) && unchanged?(list, built_from)
+
+        @known_bots_trie = [list, *build_known_bots_trie(list)]
+        @known_bots_trie.last
+      end
+    end
+
+    def self.unchanged?(list, built_from)
+      list.is_a?(Array) ? built_from == list : built_from.size == list.size
+    end
+
+    # Taken once: another thread may change the list meanwhile.
+    def self.keywords_copy(list)
+      (list.respond_to?(:keys) ? list.keys : list.to_a.dup).freeze
+    end
+
+    def self.build_keywords_pattern(list)
+      keywords = keywords_copy(list)
+      [keywords, Regexp.new(trie_source(keywords.map(&:to_s)))]
+    end
+
+    def self.build_known_bots_trie(list)
+      keywords = keywords_copy(list)
+      byte_lists = keywords.map { |keyword| keyword.to_s.bytes }
+      prefix_bytes = byte_lists.filter_map { |bytes| bytes.size.nonzero? }.push(MAX_PREFIX_BYTES).min
+      trie = {keywords:, prefix_bytes:, prefixes: {}}
+      byte_lists.each_with_index do |bytes, rank|
+        # An app may add an empty keyword: it never matches, the walk reads a rank one byte in.
+        next if bytes.empty?
+
+        leaf = bytes.reduce(trie) { |node, byte| node[byte] ||= {} }
+        leaf[:rank] ||= rank
+        head = bytes.first(prefix_bytes)
+        trie[:prefixes][head.reduce(0) { |prefix, byte| (prefix << 8) | byte }] = trie.dig(*head)
+      end
+      [keywords, trie]
+    end
+
+    # Run by Agentry.cache_size=: rebuilds at once, in this class and its
+    # subclasses, what was built from a list changed in place since, and only
+    # that, so that a cache size set after Agentry.eager_load! leaves nothing
+    # for the first request.
+    def self.rebuild_keywords
+      KEYWORDS_LOCK.synchronize { self_and_subclasses.each { |bot_class| bot_class.send(:rebuild_own_keywords) } }
+    end
+
+    def self.self_and_subclasses
+      [self, *subclasses.flat_map { |subclass| subclass.send(:self_and_subclasses) }]
+    end
+
+    def self.rebuild_own_keywords
+      @pattern_by_list&.to_a&.each do |list, (keywords, _pattern)|
+        @pattern_by_list[list] = build_keywords_pattern(list) unless keywords_copy(list) == keywords
+      end
+      list, keywords, = @known_bots_trie
+      @known_bots_trie = [list, *build_known_bots_trie(list)] if list && keywords_copy(list) != keywords
+    end
+    private_class_method :unchanged?, :keywords_copy, :build_keywords_pattern,
+      :build_known_bots_trie, :rebuild_keywords, :self_and_subclasses, :rebuild_own_keywords
 
     # The rank of a bots.yml keyword the user agent holds: the lowest, or the
     # first one found when `lowest: false`.
-    def self.known_bot_rank(ua, lowest: true)
-      trie = known_bots_trie
+    def self.known_bot_rank(ua, lowest: true, trie: known_bots_trie)
+      prefixes = trie[:prefixes]
+      prefix_bytes = trie[:prefix_bytes]
+      mask = (1 << (8 * prefix_bytes)) - 1
+      prefix = 0
       found = nil
-      ua.bytesize.times do |start|
-        node = trie
-        position = start
-        while (node = node[ua.getbyte(position)])
+      ua.bytesize.times do |index|
+        prefix = ((prefix << 8) | ua.getbyte(index)) & mask
+        next unless index + 1 >= prefix_bytes && (node = prefixes[prefix])
+
+        position = index + 1
+        while node
           rank = node[:rank]
           if rank
             return rank unless lowest
 
             found = rank if found.nil? || rank < found
           end
+          node = node[ua.getbyte(position)]
           position += 1
         end
       end
@@ -192,9 +268,11 @@ module Agentry
       IPRanges.include?(owner, ip) || (reverse_dns && IPRanges.verified_by_dns?(owner, ip))
     end
 
+    # The rank and its keyword from the same trie: another thread may rebuild it meanwhile.
     private def known_bot_keyword
-      rank = self.class.known_bot_rank(ua)
-      self.class.known_bots_trie[:keywords][rank] if rank
+      trie = self.class.known_bots_trie
+      rank = self.class.known_bot_rank(ua, trie:)
+      trie[:keywords][rank] if rank
     end
 
     private def bot_exception?

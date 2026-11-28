@@ -12,6 +12,9 @@ warn visitors on an old browser. Agentry works in any Ruby program, and gives Ra
 
 Website and guide: https://levups.github.io/agentry/
 
+Coding agents can start from <https://levups.github.io/agentry/llms.txt>, or read this README and the
+website's pages as one Markdown file: <https://levups.github.io/agentry/llms-full.txt>.
+
 ## Why Agentry
 
 Agentry is a fork of [browser](https://github.com/fnando/browser), the gem Nando Vieira wrote, which has not changed
@@ -227,7 +230,8 @@ the last 1,000 `Accept-Language` headers and the last 1,000 sets of Client Hints
 agent seen before costs about 2 µs.
 The cache empties itself when it is full, and when `Agentry.matchers`, `Agentry::Bot.matchers`,
 `Agentry::Platform.matchers`, `Agentry::Device.matchers`, the bot list or its exceptions change. Setting
-`Agentry.cache_size` empties it too, for example after renaming an entry of `Agentry::Bot.bots` in place:
+`Agentry.cache_size` empties it too, for example after renaming an entry of `Agentry::Bot.bots`,
+`Agentry::Bot.search_engines` or `Agentry::Bot.category_by_keyword` in place, or any change that keeps their size:
 
 ```ruby
 Agentry.cache_size = 5_000 # 0 turns it off

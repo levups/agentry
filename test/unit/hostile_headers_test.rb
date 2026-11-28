@@ -66,4 +66,37 @@ class HostileHeadersTest < Minitest::Test
     refute platform.mac?("~> 15.1")
     refute platform.mac?(">= 15.1")
   end
+
+  test "answers false to a version requirement RubyGems cannot compare" do
+    browser = Agentry.new(MAC_SAFARI)
+
+    refute browser.safari?("!")
+    refute browser.platform.mac?("!")
+    refute browser.safari?("not a version")
+    assert browser.safari?(">= 1".encode("UTF-16LE"))
+    assert browser.safari?([">= 1".encode("UTF-32BE")])
+    refute browser.safari?(">= 100".encode("UTF-16LE"))
+    # An unpaired surrogate: UTF-16 that can't be read as UTF-8.
+    refute browser.safari?((">= 1".encode("UTF-16LE").b + "\x00\xD8".b).force_encoding("UTF-16LE"))
+    assert browser.safari?([">= 1", "< 100"])
+    assert browser.safari?(Gem::Requirement.new(">= 1", "< 100"))
+    assert browser.safari?(17)
+  end
+
+  test "answers false to a requirement that holds itself, and reads a deeply nested one" do
+    browser = Agentry.new(MAC_SAFARI)
+    itself = [">= 1"]
+    itself << itself
+    deep = ">= 1"
+    100_000.times { deep = [deep] }
+
+    refute browser.safari?(itself)
+    assert browser.safari?(deep)
+  end
+
+  test "checks a version on a frozen browser" do
+    browser = Agentry.new(MAC_SAFARI).freeze
+
+    assert browser.safari?(">= 1")
+  end
 end
