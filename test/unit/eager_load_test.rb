@@ -28,7 +28,7 @@ class EagerLoadTest < Minitest::Test
         #{after_eager_load}
         Agentry.define_singleton_method(:load_data) { |name| raise "loaded \#{name} after eager_load!" }
         Agentry::Bot.singleton_class.send(:define_method, :trie_source) { |_words| raise "built a trie after eager_load!" }
-        Agentry::Bot.singleton_class.send(:define_method, :build_known_bots_trie) { raise "built the bots trie after eager_load!" }
+        Agentry::Bot.singleton_class.send(:define_method, :build_known_bots_trie) { |*| raise "built the bots trie after eager_load!" }
         browser = Agentry.new("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
           accept_language: "fr-FR,fr;q=0.9")
         browser.bot.category

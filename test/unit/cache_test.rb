@@ -290,6 +290,19 @@ class CacheTest < Minitest::Test
     assert_equal "Google Bot", bot.name
   end
 
+  test "a subclass of Bot names a bot renamed in place once the cache size is set" do
+    bots = Agentry::Bot.bots.dup
+    subclass = Class.new(Agentry::Bot) { def self.bots = Agentry::Bot.bots }
+    assert_equal "Google Bot", subclass.new("Googlebot/2.1").name
+
+    Agentry::Bot.bots.delete(bots.keys.first)
+    Agentry::Bot.bots["renamedfoo"] = "Renamed Foo"
+    Agentry.cache_size = 1000
+    assert_equal "Renamed Foo", subclass.new("Mozilla/5.0 renamedfoo/1.0").name
+  ensure
+    Agentry::Bot.bots.replace(bots)
+  end
+
   test "parses an accept language once and hands out copies" do
     first = Agentry.new("", accept_language: "fr-FR,en;q=0.8").accept_language
     first.clear

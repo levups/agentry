@@ -45,65 +45,22 @@ module Agentry
         end
     end
 
-    # Builds take this lock and check again under it, rebuild_keywords too: a
-    # request that copied a list before a rename never stores its pattern after
-    # the rebuild. Reads take none: each build publishes a new frozen table, so
-    # a reader sees a whole table, the old one or the new one. Constants, which
-    # subclasses share.
+    # Each list (by identity) with a copy of its keywords and what was built
+    # from them. Builds and Agentry.cache_size='s rebuild hold the lock, and
+    # check again under it; reads take none, like the Cache.
     KEYWORDS_LOCK = Mutex.new
-    PATTERN_BY_LIST = [{}.compare_by_identity.freeze] # one slot, swapped whole
+    PATTERN_BY_LIST = {}.compare_by_identity
+    TRIE_BY_LIST = {}.compare_by_identity
+    # Lists an app builds on each call would pile up.
+    MAX_LISTS = 64
+    private_constant :KEYWORDS_LOCK, :PATTERN_BY_LIST, :TRIE_BY_LIST, :MAX_LISTS
 
     # One regexp per keyword list (an Array, or a Hash keyed by keyword),
     # rebuilt when the list is replaced or changes: the few bot exceptions are
     # compared entry by entry, a Hash by its size, and rebuild_keywords
     # compares every list after an entry renamed in place.
     def self.keywords_pattern(keywords)
-      current_keywords_pattern(keywords) ||
-        KEYWORDS_LOCK.synchronize { current_keywords_pattern(keywords) || build_keywords_pattern(keywords) }
-    end
-
-    def self.current_keywords_pattern(keywords)
-      words, pattern = PATTERN_BY_LIST[0][keywords]
-      pattern if words && current_words?(keywords, words)
-    end
-
-    def self.current_words?(keywords, words)
-      keywords.is_a?(Hash) ? words.size == keywords.size : words == keywords
-    end
-
-    # From one copy of the list, kept with the pattern: another thread may
-    # change the list meanwhile. Frozen copies of its strings too, so that an
-    # exception changed with String#replace no longer equals its copy.
-    def self.build_keywords_pattern(keywords)
-      words = (keywords.is_a?(Hash) ? keywords.keys : keywords.map { |word| copy_word(word) }).freeze
-      pattern = Regexp.new(trie_source(words.map(&:to_s)))
-      PATTERN_BY_LIST[0] = PATTERN_BY_LIST[0].merge(keywords => [words, pattern]).freeze
-      pattern
-    end
-
-    def self.copy_word(word)
-      word.is_a?(String) ? word.dup.freeze : word
-    end
-
-    # Run by Agentry.cache_size=: rebuilds at once the patterns and trie of the
-    # lists loaded so far that changed in place or were replaced, and only
-    # those, so that a cache size set after Agentry.eager_load! leaves nothing
-    # for the first request. Forgets the patterns of the lists replaced.
-    def self.rebuild_keywords
-      KEYWORDS_LOCK.synchronize do
-        pattern_by_list = PATTERN_BY_LIST[0]
-        PATTERN_BY_LIST[0] = {}.compare_by_identity.freeze
-        [@bot_exceptions, @search_engines, @category_by_keyword].compact.each do |keywords|
-          entry = pattern_by_list[keywords]
-          if entry && (keywords.is_a?(Hash) ? keywords.keys : keywords) == entry.first
-            PATTERN_BY_LIST[0] = PATTERN_BY_LIST[0].merge(keywords => entry).freeze
-          else
-            build_keywords_pattern(keywords)
-          end
-        end
-        list, keywords, = @known_bots_trie
-        build_known_bots_trie if @bots && !(list.equal?(@bots) && @bots.keys == keywords)
-      end
+      built(PATTERN_BY_LIST, keywords) { build_keywords_pattern(keywords) }
     end
 
     # bots.yml keywords nested by byte, each end holding the keyword's rank: a
@@ -111,18 +68,42 @@ module Agentry
     # keywords tries most of them. It starts only where the bytes read so far,
     # as one Integer, equal the start of a keyword, from the node they reach.
     def self.known_bots_trie
-      current_known_bots_trie || KEYWORDS_LOCK.synchronize { current_known_bots_trie || build_known_bots_trie }
-    end
-
-    def self.current_known_bots_trie
-      list, keywords, trie = @known_bots_trie
-      trie if list.equal?(bots) && keywords.size == bots.size
-    end
-
-    def self.build_known_bots_trie
-      # One read of the list: an app may add a bot from another thread meanwhile.
       list = bots
-      keywords = list.keys.freeze
+      built(TRIE_BY_LIST, list) { build_known_bots_trie(list) }
+    end
+
+    def self.built(table, list)
+      current(table, list) || KEYWORDS_LOCK.synchronize do
+        current(table, list) || begin
+          table.clear if table.size >= MAX_LISTS
+          (table[list] = yield).last
+        end
+      end
+    end
+
+    def self.current(table, list)
+      keywords, value = table[list]
+      value if keywords && (list.is_a?(Hash) ? keywords.size == list.size : keywords == list.to_a)
+    end
+
+    # Taken once: another thread may change the list meanwhile. The strings
+    # are copied too, so that one changed with String#replace no longer equals
+    # its copy.
+    def self.keywords_copy(list)
+      (if list.is_a?(Hash)
+         list.keys
+       else
+         list.to_a.map { |word| word.is_a?(String) ? word.dup.freeze : word }
+       end).freeze
+    end
+
+    def self.build_keywords_pattern(list)
+      keywords = keywords_copy(list)
+      [keywords, Regexp.new(trie_source(keywords.map(&:to_s)))]
+    end
+
+    def self.build_known_bots_trie(list)
+      keywords = keywords_copy(list)
       byte_lists = keywords.map { |keyword| keyword.to_s.bytes }
       prefix_bytes = byte_lists.filter_map { |bytes| bytes.size.nonzero? }.push(MAX_PREFIX_BYTES).min
       trie = {keywords:, prefix_bytes:, prefixes: {}}
@@ -135,11 +116,23 @@ module Agentry
         head = bytes.first(prefix_bytes)
         trie[:prefixes][head.reduce(0) { |prefix, byte| (prefix << 8) | byte }] = trie.dig(*head)
       end
-      @known_bots_trie = [list, keywords, trie]
-      trie
+      [keywords, trie]
     end
-    private_class_method :current_keywords_pattern, :current_words?, :build_keywords_pattern, :copy_word,
-      :rebuild_keywords, :current_known_bots_trie, :build_known_bots_trie
+
+    # Run by Agentry.cache_size=: rebuilds at once what was built from a list
+    # changed in place since, and only that, so that a cache size set after
+    # Agentry.eager_load! leaves nothing for the first request.
+    def self.rebuild_keywords
+      KEYWORDS_LOCK.synchronize do
+        {PATTERN_BY_LIST => :build_keywords_pattern, TRIE_BY_LIST => :build_known_bots_trie}.each do |table, build|
+          table.to_a.each do |list, (keywords, _built)|
+            table[list] = send(build, list) unless keywords_copy(list) == keywords
+          end
+        end
+      end
+    end
+    private_class_method :built, :current, :keywords_copy, :build_keywords_pattern, :build_known_bots_trie,
+      :rebuild_keywords
 
     # The rank of a bots.yml keyword the user agent holds: the lowest, or the
     # first one found when `lowest: false`.
