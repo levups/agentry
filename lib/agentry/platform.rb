@@ -24,7 +24,7 @@ module Agentry
     # Hold the list of platform matchers.
     # Order is important.
     def self.matchers
-      @matchers ||= [
+      @matchers ||= Cache::List[
         AdobeAir,
         ChromeOS,
         WindowsMobile,

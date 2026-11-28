@@ -29,7 +29,7 @@ module Agentry
     # Hold the list of device matchers.
     # Order is important.
     def self.matchers
-      @matchers ||= [
+      @matchers ||= Cache::List[
         Samsung,
         XboxOne,
         Xbox360,

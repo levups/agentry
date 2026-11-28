@@ -118,7 +118,7 @@ module Agentry
   # Hold the list of browser matchers.
   # Order is important.
   def self.matchers
-    @matchers ||= [
+    @matchers ||= Cache::List[
       Nokia,
       UCBrowser,
       PhantomJS,
@@ -195,8 +195,11 @@ module Agentry
     browser_class = Cache.cached_detection(user_agent)&.browser_class
     return browser_class.new(user_agent, **) if browser_class
 
+    generation = Cache.generation
+    detection = Cache.detection(user_agent)
     browser = detect(user_agent, **)
-    Cache.detection(user_agent).browser_class = browser.class
+    # Not when a list changed meanwhile: the class may come from the old one.
+    detection.browser_class = browser.class if Cache.generation == generation
     browser
   end
 

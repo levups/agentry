@@ -9,7 +9,7 @@ module Agentry
     MAX_PREFIX_BYTES = 4
 
     def self.matchers
-      @matchers ||= default_matchers
+      @matchers ||= Cache::List.new(default_matchers)
     end
 
     def self.default_matchers
@@ -31,7 +31,7 @@ module Agentry
     end
 
     def self.bot_exceptions
-      @bot_exceptions ||= Agentry.load_data("bot_exceptions")
+      @bot_exceptions ||= Cache::List.new(Agentry.load_data("bot_exceptions"))
     end
 
     def self.search_engines
