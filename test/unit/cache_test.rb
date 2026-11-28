@@ -296,6 +296,18 @@ class CacheTest < Minitest::Test
     Agentry::Bot.bots.replace(bots)
   end
 
+  test "names a bot from a bot list that is not a Hash" do
+    table = Agentry::Bot.bots.to_a.to_h
+    list = Object.new
+    list.define_singleton_method(:keys) { table.keys }
+    list.define_singleton_method(:[]) { |keyword| table[keyword] }
+    list.define_singleton_method(:size) { table.size }
+    subclass = Class.new(Agentry::Bot)
+    subclass.define_singleton_method(:bots) { list }
+
+    assert_equal "Google Bot", subclass.new("Mozilla/5.0 (compatible; Googlebot/2.1)").name
+  end
+
   test "parses an accept language once and hands out copies" do
     first = Agentry.new("", accept_language: "fr-FR,en;q=0.8").accept_language
     first.clear

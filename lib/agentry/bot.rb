@@ -95,7 +95,7 @@ module Agentry
 
     # Taken once: another thread may change the list meanwhile.
     def self.keywords_copy(list)
-      (list.is_a?(Hash) ? list.keys : list.to_a.dup).freeze
+      (list.respond_to?(:keys) ? list.keys : list.to_a.dup).freeze
     end
 
     def self.build_keywords_pattern(list)

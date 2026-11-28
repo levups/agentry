@@ -59,6 +59,7 @@ module Agentry
     # again too.
     def self.clear
       Bot.send(:rebuild_keywords)
+      nil
     ensure
       @mutex.synchronize do
         @generation += 1
