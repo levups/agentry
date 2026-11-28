@@ -37,7 +37,7 @@ jobs:
           ref: dd8893395248594ca0e4b6a3fbd221f36989b15b
           path: upstream
       - name: Set up Ruby
-        uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+        uses: ruby/setup-ruby@20eb24b0d509e2b9ed9b6d42ddfeb992915e0564 # v1.341.0
         with:
           ruby-version: "4.0"
           bundler-cache: true
@@ -62,6 +62,8 @@ jobs:
         run: ruby script/bot_coverage.rb upstream/lib > "$RUNNER_TEMP/coverage.md"
       - name: Render the site's bot numbers
         run: ruby script/render_docs.rb
+      - name: Write llms.txt and llms-full.txt from the pages
+        run: bundle exec rake docs:llms
       - name: Write the pull request body
         run: |
           {
@@ -105,6 +107,8 @@ jobs:
             corpus/expected_differences.jsonl
             docs/bot_coverage.json
             docs/*.html
+            docs/llms.txt
+            docs/llms-full.txt
           commit-message: Sync the bot lists from crawler-user-agents and ai.robots.txt, and the crawler IP ranges
           title: "Bot list: new bots from crawler-user-agents and ai.robots.txt, fresh crawler IP ranges"
           body-path: ${{ runner.temp }}/body.md

@@ -12,6 +12,9 @@ warn visitors on an old browser. Agentry works in any Ruby program, and gives Ra
 
 Website and guide: https://levups.github.io/agentry/
 
+Coding agents can start from <https://levups.github.io/agentry/llms.txt>, or read this README and the
+website's pages as one Markdown file: <https://levups.github.io/agentry/llms-full.txt>.
+
 ## Why Agentry
 
 Agentry is a fork of [browser](https://github.com/fnando/browser), the gem Nando Vieira wrote, which has not changed
