@@ -61,7 +61,9 @@ module Agentry
 
     private def header(signal)
       value = @headers&.[](self.class.env_key_by_signal[signal])
-      value if value.is_a?(String) && value.bytesize <= HEADER_SIZE_LIMIT_BYTES && value.valid_encoding?
+      # A value in UTF-16, which the patterns can't read, is ignored like invalid UTF-8.
+      value if value.is_a?(String) && value.bytesize <= HEADER_SIZE_LIMIT_BYTES && value.valid_encoding? &&
+        value.encoding.ascii_compatible?
     end
   end
 end

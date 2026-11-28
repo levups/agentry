@@ -159,12 +159,21 @@ class ClientHintsTest < Minitest::Test
     versions = %w[19.0.0 10.0.0 15.0.0 13.0.0]
     threads = versions.map do |version|
       Thread.new do
-        Array.new(2_000) { Agentry.new(WINDOWS_CHROME, headers: hints(platform: "Windows", platform_version: version)) }
+        Array.new(2_000) do
+          Thread.pass # interleave the readers with the inserts and the flushes
+          Agentry.new(WINDOWS_CHROME, headers: hints(platform: "Windows", platform_version: version))
+        end
           .map { |browser| browser.client_hints.platform_version }.uniq
       end
     end
 
     assert_equal versions.zip, threads.map(&:value)
+  end
+
+  test "ignores a Cloudflare header in an encoding its patterns can't read" do
+    browser = Agentry.new(WINDOWS_CHROME, headers: {"HTTP_X_BOT_SCORE" => "1".encode("UTF-16LE")})
+
+    assert_nil browser.cloudflare.bot_score
   end
 
   test "ignores a hint in an encoding its patterns can't read" do

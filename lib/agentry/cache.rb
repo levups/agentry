@@ -15,7 +15,7 @@ module Agentry
     @mutex = Mutex.new
     @detection_by_user_agent = {}
     @languages_by_header = {}
-    @client_hints_by_values = {}.freeze
+    @client_hints_by_values = {}
     @client_hints_count = 0
     @generation = 0
 
@@ -52,35 +52,38 @@ module Agentry
       return ClientHints::NONE if values.all?(&:nil?)
       return ClientHints.new(headers, values) if Agentry.cache_size.zero?
 
-      client_hints = @client_hints_by_values.dig(*values)
+      keys = values.map { |value| client_hints_key(value) }
+      client_hints = @client_hints_by_values.dig(*keys)
       return client_hints if client_hints
 
       client_hints = ClientHints.new(headers, values)
       return client_hints if client_hints.brand_count > MAX_BRANDS_PER_CACHED_HINTS
 
-      @mutex.synchronize { store_client_hints(values.map { |value| value && -value }, client_hints) }
+      @mutex.synchronize { store_client_hints(keys, client_hints) }
     end
 
-    # One frozen Hash level per header, each keyed by a String, copied on each
-    # insert rather than changed: a read takes no lock, and a lookup may call
-    # String#eql? in Ruby (a nil key), where another thread could run.
+    # One Hash level per header, each keyed by a plain String, "" for a
+    # missing value (both parse alike): a lookup then compares keys in C, which
+    # no other thread interrupts, where an Array or a nil key calls eql? in
+    # Ruby while a writer may grow the Hash.
+    def self.client_hints_key(value)
+      return "" unless value
+
+      value.instance_of?(String) ? value : String.new(value)
+    end
+
     def self.store_client_hints(keys, client_hints)
-      root = @client_hints_by_values
-      stored = root.dig(*keys)
+      stored = @client_hints_by_values.dig(*keys)
       return stored if stored
 
       if @client_hints_count >= Agentry.cache_size
-        root = {}.freeze
+        @client_hints_by_values = {}
         @client_hints_count = 0
       end
-      @client_hints_by_values = with_entry(root, keys, client_hints)
+      *levels, last = keys.map { |key| -key }
+      levels.reduce(@client_hints_by_values) { |level, key| level[key] ||= {} }[last] = client_hints
       @client_hints_count += 1
       client_hints
-    end
-
-    def self.with_entry(level, (key, *keys), value)
-      level ||= {}
-      level.merge(key => keys.empty? ? value : with_entry(level[key], keys, value)).freeze
     end
 
     # Bumped when a matcher list, the bot list or its exceptions change: the
@@ -107,7 +110,7 @@ module Agentry
         @generation += 1
         @detection_by_user_agent.clear
         @languages_by_header.clear
-        @client_hints_by_values = {}.freeze
+        @client_hints_by_values = {}
         @client_hints_count = 0
       end
     end
@@ -145,6 +148,6 @@ module Agentry
     end
 
     private_class_method :lists_unchanged?, :remember_lists,
-      :current_detection_by_user_agent, :store_client_hints, :with_entry, :store
+      :current_detection_by_user_agent, :client_hints_key, :store_client_hints, :store
   end
 end
