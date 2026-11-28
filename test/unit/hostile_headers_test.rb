@@ -73,9 +73,18 @@ class HostileHeadersTest < Minitest::Test
     refute browser.safari?("!")
     refute browser.platform.mac?("!")
     refute browser.safari?("not a version")
-    refute browser.safari?(">= 1".encode("UTF-16LE"))
+    assert browser.safari?(">= 1".encode("UTF-16LE"))
+    assert browser.safari?([">= 1".encode("UTF-32BE")])
+    refute browser.safari?(">= 100".encode("UTF-16LE"))
+    refute browser.safari?(">= 1\xFF".dup.force_encoding("UTF-16LE"))
     assert browser.safari?([">= 1", "< 100"])
     assert browser.safari?(Gem::Requirement.new(">= 1", "< 100"))
     assert browser.safari?(17)
+  end
+
+  test "checks a version on a frozen browser" do
+    browser = Agentry.new(MAC_SAFARI).freeze
+
+    assert browser.safari?(">= 1")
   end
 end
