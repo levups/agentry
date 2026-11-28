@@ -227,8 +227,8 @@ In another Rack app, `use Agentry::Middleware do … end` takes the same block. 
 
 Each process remembers what it found for the last 1,000 user agents (browser, platform, device and bot answers),
 the last 1,000 `Accept-Language` headers and the last 1,000 sets of Client Hints, about 1 KB per user agent and up
-to 7 KB per forged set of hints. A `Sec-CH-UA` naming more than 8 distinct brands is never kept. A user agent seen
-before costs about 2 µs.
+to 7 KB per forged set of hints. A `Sec-CH-UA` naming more than 8 distinct brands, GREASE aside, is never kept. A
+user agent seen before costs about 2 µs.
 The cache empties itself when it is full, and when `Agentry.matchers`, `Agentry::Bot.matchers`,
 `Agentry::Platform.matchers`, `Agentry::Device.matchers`, the bot list or its exceptions change. Setting
 `Agentry.cache_size` empties it too, for example after renaming an entry of `Agentry::Bot.bots`,

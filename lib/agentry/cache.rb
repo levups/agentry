@@ -15,8 +15,7 @@ module Agentry
     @mutex = Mutex.new
     @detection_by_user_agent = {}
     @languages_by_header = {}
-    @client_hints_by_values = {}
-    @client_hints_count = 0
+    @client_hints_by_key = {}
     @generation = 0
 
     def self.cached_detection(ua)
@@ -50,40 +49,27 @@ module Agentry
     def self.client_hints(headers)
       values = ClientHints.header_values(headers)
       return ClientHints::NONE if values.all?(&:nil?)
-      return ClientHints.new(headers, values) if Agentry.cache_size.zero?
 
-      keys = values.map { |value| client_hints_key(value) }
-      client_hints = @client_hints_by_values.dig(*keys)
+      key = client_hints_key(values) if Agentry.cache_size.positive?
+      client_hints = key && @client_hints_by_key[key]
       return client_hints if client_hints
 
       client_hints = ClientHints.new(headers, values)
-      return client_hints if client_hints.brand_count > MAX_BRANDS_PER_CACHED_HINTS
+      return client_hints unless key && client_hints.brand_count <= MAX_BRANDS_PER_CACHED_HINTS
 
-      @mutex.synchronize { store_client_hints(keys, client_hints) }
+      @mutex.synchronize { store(@client_hints_by_key, key, client_hints) }
     end
 
-    # One Hash level per header, each keyed by a plain String, "" for a
-    # missing value (both parse alike): a lookup then compares keys in C, which
-    # no other thread interrupts, where an Array or a nil key calls eql? in
-    # Ruby while a writer may grow the Hash.
-    def self.client_hints_key(value)
-      return "" unless value
-
-      value.instance_of?(String) ? value : String.new(value)
-    end
-
-    def self.store_client_hints(keys, client_hints)
-      stored = @client_hints_by_values.dig(*keys)
-      return stored if stored
-
-      if @client_hints_count >= Agentry.cache_size
-        @client_hints_by_values = {}
-        @client_hints_count = 0
-      end
-      *levels, last = keys.map { |key| -key }
-      levels.reduce(@client_hints_by_values) { |level, key| level[key] ||= {} }[last] = client_hints
-      @client_hints_count += 1
-      client_hints
+    # One String made here, never the caller's: a lookup by it compares keys
+    # in C, which no other thread interrupts, where an Array, a nil or a
+    # String with a class of its own calls eql? in Ruby while a writer may grow
+    # the Hash. The values hold no NUL byte (ClientHints.header_values), so
+    # two sets that parse apart never join alike. Values in two encodings that
+    # can't join are not kept.
+    def self.client_hints_key(values)
+      values.join("\0")
+    rescue Encoding::CompatibilityError
+      nil
     end
 
     # Bumped when a matcher list, the bot list or its exceptions change: the
@@ -110,8 +96,7 @@ module Agentry
         @generation += 1
         @detection_by_user_agent.clear
         @languages_by_header.clear
-        @client_hints_by_values = {}
-        @client_hints_count = 0
+        @client_hints_by_key.clear
       end
     end
 
@@ -148,6 +133,6 @@ module Agentry
     end
 
     private_class_method :lists_unchanged?, :remember_lists,
-      :current_detection_by_user_agent, :client_hints_key, :store_client_hints, :store
+      :current_detection_by_user_agent, :client_hints_key, :store
   end
 end

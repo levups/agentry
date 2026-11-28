@@ -176,6 +176,13 @@ class ClientHintsTest < Minitest::Test
     assert_nil browser.cloudflare.bot_score
   end
 
+  test "reads hints in two encodings that can't be joined, and ignores a NUL byte" do
+    mixed = hints(brands: %("Chromé";v="142").b, platform: "Windowsé")
+
+    assert_equal ["142"], Agentry.new(WINDOWS_CHROME, headers: mixed).client_hints.version_by_brand.values
+    assert_nil Agentry.new(WINDOWS_CHROME, headers: hints(platform: "Windows\0")).client_hints.platform
+  end
+
   test "ignores a hint in an encoding its patterns can't read" do
     utf16 = hints(platform: "Windows").merge("HTTP_SEC_CH_UA_PLATFORM" => %("Windows").encode("UTF-16LE"))
 

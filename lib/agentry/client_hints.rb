@@ -50,12 +50,13 @@ module Agentry
       @version_by_brand.size
     end
 
-    # The four values, read once. A value in UTF-16, which the patterns can't read, is ignored like invalid UTF-8.
+    # The four values, read once. A value in UTF-16, which the patterns can't read, or holding a NUL byte, which no
+    # browser sends (Cache.client_hints joins the values with it), is ignored like invalid UTF-8.
     def self.header_values(headers) # :nodoc:
       HEADER_NAMES.map do |name|
         value = headers[name]
         value if value.is_a?(String) && value.bytesize <= HEADER_SIZE_LIMIT_BYTES && value.valid_encoding? &&
-          value.encoding.ascii_compatible?
+          value.encoding.ascii_compatible? && !value.include?("\0")
       end
     end
 
