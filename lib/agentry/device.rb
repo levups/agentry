@@ -65,7 +65,8 @@ module Agentry
       mobile = client_hints.mobile?
       return self if platform.equal?(self.platform) && (mobile.nil? || mobile == detect_mobile?)
 
-      self.class.new(ua, platform:, client_hints:)
+      # Its subject: what the user agent names, which the hints never change.
+      self.class.new(ua, platform:, client_hints:).tap { |device| device.subject = subject }
     end
 
     def subject
@@ -246,6 +247,7 @@ module Agentry
     end
 
     private :subject
+    protected attr_writer :subject
     private :ua
   end
 end

@@ -6,6 +6,9 @@ module Agentry
   class ClientHints
     # A browser's hints are a few dozen bytes: longer values, and invalid UTF-8, are ignored.
     HEADER_SIZE_LIMIT_BYTES = 512
+    # In the order #initialize reads them; Cache.client_hints keys its entries on them. :nodoc:
+    HEADER_NAMES = %w[HTTP_SEC_CH_UA HTTP_SEC_CH_UA_MOBILE HTTP_SEC_CH_UA_PLATFORM HTTP_SEC_CH_UA_PLATFORM_VERSION]
+      .freeze
     PLATFORM_CLASS_BY_NAME = {
       "Android" => Platform::Android,
       "Chrome OS" => Platform::ChromeOS,
@@ -22,18 +25,48 @@ module Agentry
     MOBILE_BY_VALUE = {"?1" => true, "?0" => false}.freeze
 
     # Brand versions keyed by brand ("Google Chrome" => "142"), from Sec-CH-UA.
-    attr_reader :version_by_brand
+    # Each reader hands out copies: Cache.client_hints shares the frozen
+    # originals with every request.
+    def version_by_brand
+      @version_by_brand.transform_values(&:dup).freeze
+    end
+
     # Sec-CH-UA-Platform ("Windows", "macOS", "Android"…).
-    attr_reader :platform
+    def platform
+      @platform&.dup
+    end
+
     # Sec-CH-UA-Platform-Version ("15.0.0"), sent only to a site asking for it
     # with an Accept-CH: Sec-CH-UA-Platform-Version response header.
-    attr_reader :platform_version
+    def platform_version
+      @platform_version&.dup
+    end
 
-    def initialize(headers)
-      @version_by_brand = parse_brands(header(headers, "HTTP_SEC_CH_UA"))
-      @mobile = MOBILE_BY_VALUE[header(headers, "HTTP_SEC_CH_UA_MOBILE")&.strip]
-      @platform = quoted_string(header(headers, "HTTP_SEC_CH_UA_PLATFORM"))
-      @platform_version = quoted_string(header(headers, "HTTP_SEC_CH_UA_PLATFORM_VERSION"))
+    def platform_version?
+      !@platform_version.nil?
+    end
+
+    def brand_count # :nodoc:
+      @version_by_brand.size
+    end
+
+    # The four values, read once. A value in UTF-16, which the patterns can't read, or holding a NUL byte, which no
+    # browser sends (Cache.client_hints joins the values with it), is ignored like invalid UTF-8.
+    def self.header_values(headers) # :nodoc:
+      HEADER_NAMES.map do |name|
+        value = headers[name]
+        value if value.is_a?(String) && value.bytesize <= HEADER_SIZE_LIMIT_BYTES && value.valid_encoding? &&
+          value.encoding.ascii_compatible? && !value.include?("\0")
+      end
+    end
+
+    # The values Cache.client_hints already read, if given.
+    def initialize(headers, values = self.class.header_values(headers))
+      brands, mobile, platform, platform_version = values
+      @version_by_brand = parse_brands(brands)
+      @mobile = MOBILE_BY_VALUE[mobile&.strip]
+      @platform = quoted_string(platform)
+      @platform_version = quoted_string(platform_version)
       freeze
     end
 
@@ -43,28 +76,26 @@ module Agentry
     end
 
     def platform_class
-      PLATFORM_CLASS_BY_NAME[platform]
+      PLATFORM_CLASS_BY_NAME[@platform]
     end
 
     # Windows 11 says "Windows NT 10.0" in its user agent: only its platform
     # version tells it from Windows 10.
     def windows11?
-      platform == "Windows" && platform_version.to_i >= WINDOWS_11_PLATFORM_VERSION
-    end
-
-    private def header(headers, name)
-      value = headers[name]
-      value if value.is_a?(String) && value.bytesize <= HEADER_SIZE_LIMIT_BYTES && value.valid_encoding?
+      @platform == "Windows" && @platform_version.to_i >= WINDOWS_11_PLATFORM_VERSION
     end
 
     private def parse_brands(value)
       return EMPTY_HASH unless value
 
-      value.scan(BRAND_PATTERN).to_h.reject { |brand, _version| GREASE_BRAND_PATTERN.match?(brand) }.freeze
+      value.scan(BRAND_PATTERN).each_with_object({}) do |(brand, version), version_by_brand|
+        version_by_brand[brand] = version.freeze unless GREASE_BRAND_PATTERN.match?(brand)
+      end.freeze
     end
 
+    # Frozen, like every value: Cache.client_hints hands them to each request.
     private def quoted_string(value)
-      value&.[](QUOTED_STRING_PATTERN, 1)
+      value&.[](QUOTED_STRING_PATTERN, 1)&.freeze
     end
 
     EMPTY_HASH = {}.freeze

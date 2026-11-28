@@ -1,18 +1,21 @@
 # frozen_string_literal: true
 
 module Agentry
-  # The detections of the last user agents and the parsed Accept-Language
-  # headers, shared by the threads of a process. Reads take no lock: under the
+  # The detections of the last user agents, the parsed Accept-Language
+  # headers and Client Hints, shared by the threads of a process. Reads take no lock: under the
   # GVL a Hash read is atomic, and a thread that misses detects again. Writes
   # do, for the Rubies without a GVL.
   module Cache
     # Far more than a browser sends. A longer list is parsed again each time: 2 KB of "a,a,a" makes a thousand
     # objects, and a thousand such headers would hold 100 MB.
     MAX_LANGUAGES_PER_CACHED_HEADER = 32
+    # A browser names 3 brands: a forged Sec-CH-UA naming dozens is parsed each time, so that an entry stays small.
+    MAX_BRANDS_PER_CACHED_HINTS = 8
 
     @mutex = Mutex.new
     @detection_by_user_agent = {}
     @languages_by_header = {}
+    @client_hints_by_key = {}
     @generation = 0
 
     def self.cached_detection(ua)
@@ -41,6 +44,34 @@ module Agentry
       @mutex.synchronize { store(@languages_by_header, -header, languages.freeze) }.dup
     end
 
+    # Keyed by the hint headers, which a Chromium browser sends alike on
+    # each request: ClientHints is frozen, so every request shares it.
+    def self.client_hints(headers)
+      values = ClientHints.header_values(headers)
+      return ClientHints::NONE if values.all?(&:nil?)
+
+      key = client_hints_key(values) if Agentry.cache_size.positive?
+      client_hints = key && @client_hints_by_key[key]
+      return client_hints if client_hints
+
+      client_hints = ClientHints.new(headers, values)
+      return client_hints unless key && client_hints.brand_count <= MAX_BRANDS_PER_CACHED_HINTS
+
+      @mutex.synchronize { store(@client_hints_by_key, key, client_hints) }
+    end
+
+    # One String made here, never the caller's: a lookup by it compares keys
+    # in C, which no other thread interrupts, where an Array, a nil or a
+    # String with a class of its own calls eql? in Ruby while a writer may grow
+    # the Hash. The values hold no NUL byte (ClientHints.header_values), so
+    # two sets that parse apart never join alike. Values in two encodings that
+    # can't join are not kept.
+    def self.client_hints_key(values)
+      values.join("\0")
+    rescue Encoding::CompatibilityError
+      nil
+    end
+
     # Bumped when a matcher list, the bot list or its exceptions change: the
     # matchers are public arrays that apps extend at runtime.
     def self.generation
@@ -65,6 +96,7 @@ module Agentry
         @generation += 1
         @detection_by_user_agent.clear
         @languages_by_header.clear
+        @client_hints_by_key.clear
       end
     end
 
@@ -101,6 +133,6 @@ module Agentry
     end
 
     private_class_method :lists_unchanged?, :remember_lists,
-      :current_detection_by_user_agent, :store
+      :current_detection_by_user_agent, :client_hints_key, :store
   end
 end
