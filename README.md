@@ -230,7 +230,7 @@ and the last 1,000 `Accept-Language` headers, about 1 KB per user agent. A user 
 The cache empties itself when it is full, and when `Agentry.matchers`, `Agentry::Bot.matchers`,
 `Agentry::Platform.matchers`, `Agentry::Device.matchers`, the bot list or its exceptions change. Setting
 `Agentry.cache_size` empties it too, for example after renaming an entry of `Agentry::Bot.bots`,
-`Agentry::Bot.search_engines` or `Agentry::Bot.category_by_keyword` in place:
+`Agentry::Bot.search_engines` or `Agentry::Bot.category_by_keyword` in place, or any change that keeps their size:
 
 ```ruby
 Agentry.cache_size = 5_000 # 0 turns it off

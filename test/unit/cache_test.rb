@@ -219,6 +219,65 @@ class CacheTest < Minitest::Test
     Agentry::Bot.bots.replace(bots)
   end
 
+  test "answers again when a bot exception changes as a String" do
+    exception = Agentry::Bot.bot_exceptions.first
+    original = exception.dup
+    assert Agentry.new("cachedbot/1.0").bot?
+
+    exception.replace("cachedbot")
+    refute Agentry.new("cachedbot/1.0").bot?
+  ensure
+    exception.replace(original)
+  end
+
+  test "a bot kept across a rename answers again once the cache size is set" do
+    bots = Agentry::Bot.bots.dup
+    bot = Agentry::Bot.new("Mozilla/5.0 renamedfoo/1.0")
+    refute bot.bot?
+
+    Agentry::Bot.bots.delete(bots.keys.first)
+    Agentry::Bot.bots["renamedfoo"] = "Renamed Foo"
+    Agentry.cache_size = 1000
+    assert_equal "Renamed Foo", bot.name
+  ensure
+    Agentry::Bot.bots.replace(bots)
+  end
+
+  # The request copies the list, then waits inside trie_source while the app renames an engine and sets the cache
+  # size: the rebuild must not be overwritten by the request's older pattern.
+  test "finds a search engine renamed while a request builds the old pattern" do
+    search_engines = Agentry::Bot.search_engines.dup
+    trie_source = Agentry::Bot.method(:trie_source)
+    building = Queue.new
+    resume = Queue.new
+    Agentry::Bot.define_singleton_method(:trie_source) do |words|
+      if Thread.current[:slow_build]
+        building << true
+        resume.pop
+      end
+      trie_source.call(words)
+    end
+
+    Agentry::Bot.search_engines["growingengine"] = "Growing Engine"
+    request = Thread.new do
+      Thread.current[:slow_build] = true
+      Agentry::Bot.new("x").search_engine?
+    end
+    building.pop
+    Agentry::Bot.search_engines.delete(search_engines.keys.first)
+    Agentry::Bot.search_engines["renamedengine"] = "Renamed Engine"
+    rebuild = Thread.new { Agentry.cache_size = 1000 }
+    Thread.pass until rebuild.stop? || !rebuild.alive?
+    resume << true
+    [request, rebuild].each(&:join)
+
+    assert Agentry::Bot.new("renamedengine/1.0").search_engine?
+  ensure
+    Agentry::Bot.define_singleton_method(:trie_source, trie_source)
+    Agentry::Bot.singleton_class.send(:private, :trie_source)
+    Agentry::Bot.search_engines.replace(search_engines)
+  end
+
   test "parses an accept language once and hands out copies" do
     first = Agentry.new("", accept_language: "fr-FR,en;q=0.8").accept_language
     first.clear

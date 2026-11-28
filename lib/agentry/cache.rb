@@ -54,10 +54,13 @@ module Agentry
       @generation
     end
 
-    # The bot patterns first: a request between the two would cache an answer from the old ones.
+    # The bot patterns first: a request between the two would cache an answer
+    # from the old ones. A new generation, so that a Bot kept meanwhile answers
+    # again too.
     def self.clear
       Bot.rebuild_keywords
       @mutex.synchronize do
+        @generation += 1
         @detection_by_user_agent.clear
         @languages_by_header.clear
       end
@@ -79,7 +82,8 @@ module Agentry
       @platform_matchers = Platform.matchers.dup
       @device_matchers = Device.matchers.dup
       @bot_matchers = Bot.matchers.dup
-      @bot_exceptions = Bot.bot_exceptions.dup
+      # Copies of the entries too: an exception changed with String#replace no longer equals its copy.
+      @bot_exceptions = Bot.bot_exceptions.map { |exception| exception.dup.freeze }
       @bots = Bot.bots
       @bots_size = Bot.bots.size
     end

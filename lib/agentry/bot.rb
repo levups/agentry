@@ -45,21 +45,31 @@ module Agentry
         end
     end
 
+    # Builds take this lock and check again under it, rebuild_keywords too: a
+    # request that copied a list before a rename never stores its pattern after
+    # the rebuild. Reads take none, like the Cache.
+    @keywords_mutex = Mutex.new
+    @keywords_pattern_by_list = {}.compare_by_identity
+
     # One regexp per keyword list (an Array, or a Hash keyed by keyword),
     # rebuilt when the list is replaced or changes: the few bot exceptions are
     # compared entry by entry, a Hash by its size, and rebuild_keywords
     # compares every list after an entry renamed in place.
     def self.keywords_pattern(keywords)
-      @keywords_pattern_by_list ||= {}.compare_by_identity
-      words, pattern = @keywords_pattern_by_list[keywords]
-      return pattern if words && (keywords.is_a?(Hash) ? words.size == keywords.size : words == keywords)
-
-      build_keywords_pattern(keywords)
+      current_keywords_pattern(keywords) ||
+        @keywords_mutex.synchronize { current_keywords_pattern(keywords) || build_keywords_pattern(keywords) }
     end
 
-    # From one copy of the list, kept with the pattern: another thread may change the list meanwhile.
+    def self.current_keywords_pattern(keywords)
+      words, pattern = @keywords_pattern_by_list[keywords]
+      pattern if words && (keywords.is_a?(Hash) ? words.size == keywords.size : words == keywords)
+    end
+
+    # From one copy of the list, kept with the pattern: another thread may
+    # change the list meanwhile. Frozen copies of the entries too, so that an
+    # exception changed with String#replace no longer equals its copy.
     def self.build_keywords_pattern(keywords)
-      words = (keywords.is_a?(Hash) ? keywords.keys : keywords.dup).freeze
+      words = (keywords.is_a?(Hash) ? keywords.keys : keywords.map { |word| word.dup.freeze }).freeze
       pattern = Regexp.new(trie_source(words.map(&:to_s)))
       @keywords_pattern_by_list[keywords] = [words, pattern]
       pattern
@@ -69,12 +79,14 @@ module Agentry
     # list changed in place, and only those, so that a cache size set after
     # Agentry.eager_load! leaves nothing for the first request.
     def self.rebuild_keywords
-      # Over a copy: a request may build another list's pattern meanwhile.
-      @keywords_pattern_by_list&.to_a&.each do |keywords, (words, _pattern)|
-        build_keywords_pattern(keywords) unless (keywords.is_a?(Hash) ? keywords.keys : keywords) == words
+      @keywords_mutex.synchronize do
+        # Over a copy: the loop adds to the Hash it reads.
+        @keywords_pattern_by_list.to_a.each do |keywords, (words, _pattern)|
+          build_keywords_pattern(keywords) unless (keywords.is_a?(Hash) ? keywords.keys : keywords) == words
+        end
+        list, keywords, = @known_bots_trie
+        build_known_bots_trie if list && !(list.equal?(bots) && list.keys == keywords)
       end
-      list, keywords, = @known_bots_trie
-      build_known_bots_trie if list && list.keys != keywords
     end
 
     # bots.yml keywords nested by byte, each end holding the keyword's rank: a
@@ -82,10 +94,12 @@ module Agentry
     # keywords tries most of them. It starts only where the bytes read so far,
     # as one Integer, equal the start of a keyword, from the node they reach.
     def self.known_bots_trie
-      list, keywords, trie = @known_bots_trie
-      return trie if list.equal?(bots) && keywords.size == bots.size
+      current_known_bots_trie || @keywords_mutex.synchronize { current_known_bots_trie || build_known_bots_trie }
+    end
 
-      build_known_bots_trie
+    def self.current_known_bots_trie
+      list, keywords, trie = @known_bots_trie
+      trie if list.equal?(bots) && keywords.size == bots.size
     end
 
     def self.build_known_bots_trie
@@ -107,7 +121,8 @@ module Agentry
       @known_bots_trie = [list, keywords, trie]
       trie
     end
-    private_class_method :build_keywords_pattern, :build_known_bots_trie
+    private_class_method :current_keywords_pattern, :build_keywords_pattern, :current_known_bots_trie,
+      :build_known_bots_trie
 
     # The rank of a bots.yml keyword the user agent holds: the lowest, or the
     # first one found when `lowest: false`.

@@ -6,8 +6,18 @@ require "open3"
 class EagerLoadTest < Minitest::Test
   # A fresh process: in this one, earlier tests have already built the caches. An app may set the cache size after
   # eager_load!, in a preforking server's boot hook.
-  ["", "Agentry.cache_size = 5_000"].each do |after_eager_load|
-    test "leaves nothing for the first request to load or build #{after_eager_load}".strip do
+  {
+    "" => "",
+    "and a cache size" => "Agentry.cache_size = 5_000",
+    "and entries renamed in place" => <<~RUBY
+      bots = Agentry::Bot.bots
+      bots["renamedfoo"] = bots.delete(bots.keys.first)
+      search_engines = Agentry::Bot.search_engines
+      search_engines["renamedengine"] = search_engines.delete(search_engines.keys.first)
+      Agentry.cache_size = 5_000
+    RUBY
+  }.each do |name, after_eager_load|
+    test "leaves nothing for the first request to load or build #{name}".strip do
       lib_path = File.expand_path("../../lib", __dir__)
       first_request = <<~RUBY
         require "agentry"
