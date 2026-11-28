@@ -18,7 +18,7 @@ module Agentry
     @mutex = Mutex.new
     @detection_by_user_agent = {}
     @languages_by_header = {}
-    @requirement_by_version = {}
+    @requirement_by_string = {}
     @gem_version_by_version = {}
     @client_hints_by_key = {}
     @generation = 0
@@ -39,23 +39,25 @@ module Agentry
     # Built once: an app asks the same few requirements (">= 17") of every request, and browsers send the same few
     # versions. The block builds one; DetectVersion keeps versions out of RubyGems' own caches.
     def self.requirement(expected_version, &)
-      versioned(@requirement_by_version, expected_version, &)
+      versioned(@requirement_by_string, expected_version, &)
     end
 
+    # Frozen once kept: shared by every thread, a version computes its segments once, before anyone reads it.
     def self.version(version, &)
-      versioned(@gem_version_by_version, version, &)
+      versioned(@gem_version_by_version, version, freeze: true, &)
     end
 
-    def self.versioned(value_by_version, version)
-      return yield unless version.is_a?(String) && version.bytesize <= MAX_CACHED_VERSION_BYTES &&
+    # Only a String of class String, keyed by its interned copy: a subclass may read itself its own way (to_str),
+    # and would compare in Ruby, where another thread may grow the Hash halfway through a lookup that takes no lock.
+    def self.versioned(value_by_version, version, freeze: false)
+      return yield unless version.instance_of?(String) && version.bytesize <= MAX_CACHED_VERSION_BYTES &&
         Agentry.cache_size.positive?
 
-      # Keyed by a plain frozen String, never the caller's: a String subclass or a singleton class would compare in
-      # Ruby, where another thread may grow the Hash halfway through a lookup that takes no lock.
-      version = -(version.instance_of?(String) ? version : String.new(version))
+      version = -version
       # Built outside the lock: a malformed version raises, and other threads keep storing meanwhile.
       value_by_version[version] || begin
         value = yield
+        value.freeze if freeze
         @mutex.synchronize { store(value_by_version, version, value) }
       end
     end
@@ -125,7 +127,7 @@ module Agentry
         @generation += 1
         @detection_by_user_agent.clear
         @languages_by_header.clear
-        @requirement_by_version.clear
+        @requirement_by_string.clear
         @gem_version_by_version.clear
         @client_hints_by_key.clear
       end
