@@ -306,6 +306,8 @@ class CacheTest < Minitest::Test
     subclass.define_singleton_method(:bots) { list }
 
     assert_equal "Google Bot", subclass.new("Mozilla/5.0 (compatible; Googlebot/2.1)").name
+  end
+
   test "compares versions alike with the cache on and off" do
     chrome_user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
       "Chrome/142.0.0.0 Safari/537.36"
