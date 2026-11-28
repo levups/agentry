@@ -54,15 +54,23 @@ module Agentry
       @generation
     end
 
+    # The bot patterns first: a request between the two would cache an answer
+    # from the old ones. A new generation, so that a Bot kept meanwhile answers
+    # again too.
     def self.clear
+      Bot.send(:rebuild_keywords)
+      nil
+    ensure
       @mutex.synchronize do
+        @generation += 1
         @detection_by_user_agent.clear
         @languages_by_header.clear
       end
     end
 
     # The bot list holds hundreds of entries: compared by identity and size,
-    # like Bot.keywords_pattern, not entry by entry on every request.
+    # like the Hash lists of Bot.keywords_pattern, not entry by entry on every
+    # request.
     def self.lists_unchanged?
       @browser_matchers == Agentry.matchers &&
         @platform_matchers == Platform.matchers &&
