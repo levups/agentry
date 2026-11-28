@@ -2,19 +2,24 @@
 
 module Agentry
   # The detections of the last user agents, the parsed Accept-Language
-  # headers and Client Hints, shared by the threads of a process. Reads take no lock: under the
-  # GVL a Hash read is atomic, and a thread that misses detects again. Writes
-  # do, for the Rubies without a GVL.
+  # headers, Client Hints and the versions compared, shared by the threads
+  # of a process. Reads take no lock: under the GVL a Hash read is atomic,
+  # and a thread that misses detects again. Writes do, for the Rubies
+  # without a GVL.
   module Cache
     # Far more than a browser sends. A longer list is parsed again each time: 2 KB of "a,a,a" makes a thousand
     # objects, and a thousand such headers would hold 100 MB.
     MAX_LANGUAGES_PER_CACHED_HEADER = 32
+    # A browser sends a version of a few bytes: a longer one is built each time, so that the cache stays small.
+    MAX_CACHED_VERSION_BYTES = 32
     # A browser names 3 brands: a forged Sec-CH-UA naming dozens is parsed each time, so that an entry stays small.
     MAX_BRANDS_PER_CACHED_HINTS = 8
 
     @mutex = Mutex.new
     @detection_by_user_agent = {}
     @languages_by_header = {}
+    @requirement_by_string = {}
+    @gem_version_by_version = {}
     @client_hints_by_key = {}
     @generation = 0
 
@@ -28,6 +33,32 @@ module Agentry
       cached_detection(ua) || @mutex.synchronize do
         ua = -ua
         store(@detection_by_user_agent, ua, Detection.new(ua))
+      end
+    end
+
+    # Built once: an app asks the same few requirements (">= 17") of every request, and browsers send the same few
+    # versions. The block builds one; DetectVersion keeps versions out of RubyGems' own caches.
+    def self.requirement(expected_version, &)
+      versioned(@requirement_by_string, expected_version, &)
+    end
+
+    # Frozen once kept: shared by every thread, a version computes its segments once, before anyone reads it.
+    def self.version(version, &)
+      versioned(@gem_version_by_version, version, freeze: true, &)
+    end
+
+    # Only a String of class String, keyed by its interned copy: a subclass may read itself its own way (to_str),
+    # and would compare in Ruby, where another thread may grow the Hash halfway through a lookup that takes no lock.
+    def self.versioned(value_by_version, version, freeze: false)
+      return yield unless version.instance_of?(String) && version.bytesize <= MAX_CACHED_VERSION_BYTES &&
+        Agentry.cache_size.positive?
+
+      version = -version
+      # Built outside the lock: a malformed version raises, and other threads keep storing meanwhile.
+      value_by_version[version] || begin
+        value = yield
+        value.freeze if freeze
+        @mutex.synchronize { store(value_by_version, version, value) }
       end
     end
 
@@ -96,6 +127,8 @@ module Agentry
         @generation += 1
         @detection_by_user_agent.clear
         @languages_by_header.clear
+        @requirement_by_string.clear
+        @gem_version_by_version.clear
         @client_hints_by_key.clear
       end
     end
@@ -133,6 +166,6 @@ module Agentry
     end
 
     private_class_method :lists_unchanged?, :remember_lists,
-      :current_detection_by_user_agent, :client_hints_key, :store
+      :current_detection_by_user_agent, :client_hints_key, :versioned, :store
   end
 end

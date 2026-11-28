@@ -13,9 +13,7 @@ module Agentry
       end
     end
 
-    # A browser's version is a few bytes: a longer one is not kept, so that a cached platform stays small.
-    MAX_KEPT_VERSION_BYTES = 32
-    private_constant :UncachedVersion, :MAX_KEPT_VERSION_BYTES
+    private_constant :UncachedVersion
 
     private def detect_version?(actual_version, expected_version)
       return true unless expected_version
@@ -24,7 +22,7 @@ module Agentry
       expected_version = parse_version(expected_version)
       actual_version = parse_version(actual_version)
 
-      requirement = Gem::Requirement.create(expected_version)
+      requirement = Cache.requirement(expected_version) { Gem::Requirement.create(expected_version) }
       # RubyGems reads "!" as its source set marker, which compares nothing, and a requirement that can't be read
       # as UTF-8 raises an EncodingError: neither is a requirement a version meets.
       requirement.is_a?(Gem::Requirement) && requirement.satisfied_by?(gem_version(actual_version))
@@ -32,14 +30,14 @@ module Agentry
       false
     end
 
-    # The last one built: a cached platform asks for the same version on each request.
+    # The last one used: a cached platform asks for the same version on each request, also when Cache keeps none.
     private def gem_version(version)
       string, gem_version = @gem_version
       return gem_version if string == version
 
-      gem_version = UncachedVersion.create(version)
+      gem_version = Cache.version(version) { UncachedVersion.create(version) }
       # An app's browser class may return a Gem::Version, and a frozen browser can't remember.
-      kept = version.is_a?(String) && version.bytesize <= MAX_KEPT_VERSION_BYTES && !frozen?
+      kept = version.is_a?(String) && version.bytesize <= Cache::MAX_CACHED_VERSION_BYTES && !frozen?
       @gem_version = [version, gem_version] if kept
       gem_version
     end
