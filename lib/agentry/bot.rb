@@ -54,16 +54,20 @@ module Agentry
     private_constant :KEYWORDS_LOCK, :MAX_LISTS
 
     # One regexp per keyword list (an Array, or a Hash keyed by keyword),
-    # rebuilt when the list is replaced or changes: the few bot exceptions are
-    # compared entry by entry, a Hash by its size, and rebuild_keywords
-    # compares every list after an entry renamed in place.
+    # rebuilt when the list is replaced or changes: an Array, such as the few
+    # bot exceptions, is compared entry by entry, any other list by its size,
+    # and rebuild_keywords compares every list after an entry renamed in place.
     def self.keywords_pattern(keywords)
-      current(@pattern_by_list&.[](keywords), keywords) || KEYWORDS_LOCK.synchronize do
+      built_from, pattern = @pattern_by_list&.[](keywords)
+      return pattern if built_from && unchanged?(keywords, built_from)
+
+      KEYWORDS_LOCK.synchronize do
         @pattern_by_list ||= {}.compare_by_identity
-        current(@pattern_by_list[keywords], keywords) || begin
-          @pattern_by_list.clear if @pattern_by_list.size >= MAX_LISTS
-          (@pattern_by_list[keywords] = build_keywords_pattern(keywords)).last
-        end
+        built_from, pattern = @pattern_by_list[keywords]
+        next pattern if built_from && unchanged?(keywords, built_from)
+
+        @pattern_by_list.clear if @pattern_by_list.size >= MAX_LISTS
+        (@pattern_by_list[keywords] = build_keywords_pattern(keywords)).last
       end
     end
 
@@ -73,34 +77,25 @@ module Agentry
     # as one Integer, equal the start of a keyword, from the node they reach.
     def self.known_bots_trie
       list = bots
-      current_known_bots_trie(list) || KEYWORDS_LOCK.synchronize do
-        current_known_bots_trie(list) || begin
-          @known_bots_trie = [list, build_known_bots_trie(list)]
-          @known_bots_trie.last.last
-        end
+      built_list, built_from, trie = @known_bots_trie
+      return trie if built_list.equal?(list) && unchanged?(list, built_from)
+
+      KEYWORDS_LOCK.synchronize do
+        built_list, built_from, trie = @known_bots_trie
+        next trie if built_list.equal?(list) && unchanged?(list, built_from)
+
+        @known_bots_trie = [list, *build_known_bots_trie(list)]
+        @known_bots_trie.last
       end
     end
 
-    def self.current_known_bots_trie(list)
-      built_from, entry = @known_bots_trie
-      current(entry, list) if built_from.equal?(list)
+    def self.unchanged?(list, built_from)
+      list.is_a?(Array) ? built_from == list : built_from.size == list.size
     end
 
-    # What was built from a list, if the list still holds the keywords it was built from.
-    def self.current(entry, list)
-      keywords, built = entry
-      built if keywords && (list.is_a?(Hash) ? keywords.size == list.size : keywords == list.to_a)
-    end
-
-    # Taken once: another thread may change the list meanwhile. The strings
-    # are copied too, so that one changed with String#replace no longer equals
-    # its copy.
+    # Taken once: another thread may change the list meanwhile.
     def self.keywords_copy(list)
-      (if list.is_a?(Hash)
-         list.keys
-       else
-         list.to_a.map { |word| word.is_a?(String) ? word.dup.freeze : word }
-       end).freeze
+      (list.is_a?(Hash) ? list.keys : list.to_a.dup).freeze
     end
 
     def self.build_keywords_pattern(list)
@@ -130,22 +125,22 @@ module Agentry
     # that, so that a cache size set after Agentry.eager_load! leaves nothing
     # for the first request.
     def self.rebuild_keywords
-      KEYWORDS_LOCK.synchronize { with_subclasses.each { |bot_class| bot_class.send(:rebuild_own_keywords) } }
+      KEYWORDS_LOCK.synchronize { self_and_subclasses.each { |bot_class| bot_class.send(:rebuild_own_keywords) } }
     end
 
-    def self.with_subclasses
-      [self, *subclasses.flat_map { |subclass| subclass.send(:with_subclasses) }]
+    def self.self_and_subclasses
+      [self, *subclasses.flat_map { |subclass| subclass.send(:self_and_subclasses) }]
     end
 
     def self.rebuild_own_keywords
       @pattern_by_list&.to_a&.each do |list, (keywords, _pattern)|
         @pattern_by_list[list] = build_keywords_pattern(list) unless keywords_copy(list) == keywords
       end
-      list, (keywords, _trie) = @known_bots_trie
-      @known_bots_trie = [list, build_known_bots_trie(list)] if list && keywords_copy(list) != keywords
+      list, keywords, = @known_bots_trie
+      @known_bots_trie = [list, *build_known_bots_trie(list)] if list && keywords_copy(list) != keywords
     end
-    private_class_method :current_known_bots_trie, :current, :keywords_copy, :build_keywords_pattern,
-      :build_known_bots_trie, :rebuild_keywords, :with_subclasses, :rebuild_own_keywords
+    private_class_method :unchanged?, :keywords_copy, :build_keywords_pattern,
+      :build_known_bots_trie, :rebuild_keywords, :self_and_subclasses, :rebuild_own_keywords
 
     # The rank of a bots.yml keyword the user agent holds: the lowest, or the
     # first one found when `lowest: false`.

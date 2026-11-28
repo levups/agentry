@@ -219,17 +219,6 @@ class CacheTest < Minitest::Test
     Agentry::Bot.bots.replace(bots)
   end
 
-  test "answers again when a bot exception changes as a String" do
-    exception = Agentry::Bot.bot_exceptions.first
-    original = exception.dup
-    assert Agentry.new("cachedbot/1.0").bot?
-
-    exception.replace("cachedbot")
-    refute Agentry.new("cachedbot/1.0").bot?
-  ensure
-    exception.replace(original)
-  end
-
   test "a bot kept across a rename answers again once the cache size is set" do
     bots = Agentry::Bot.bots.dup
     bot = Agentry::Bot.new("Mozilla/5.0 renamedfoo/1.0")

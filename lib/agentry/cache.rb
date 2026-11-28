@@ -75,7 +75,7 @@ module Agentry
         @platform_matchers == Platform.matchers &&
         @device_matchers == Device.matchers &&
         @bot_matchers == Bot.matchers &&
-        @bot_exceptions == Bot.bot_exceptions.to_a &&
+        @bot_exceptions == Bot.bot_exceptions &&
         @bots.equal?(Bot.bots) && @bots_size == Bot.bots.size
     end
 
@@ -84,8 +84,7 @@ module Agentry
       @platform_matchers = Platform.matchers.dup
       @device_matchers = Device.matchers.dup
       @bot_matchers = Bot.matchers.dup
-      # Copies of its strings too: an exception changed with String#replace no longer equals its copy.
-      @bot_exceptions = Bot.send(:keywords_copy, Bot.bot_exceptions)
+      @bot_exceptions = Bot.bot_exceptions.dup
       @bots = Bot.bots
       @bots_size = Bot.bots.size
     end
