@@ -263,19 +263,31 @@ class CacheTest < Minitest::Test
       Thread.current[:slow_build] = true
       Agentry::Bot.new("x").search_engine?
     end
-    building.pop
+    assert building.pop(timeout: 10), "the request did not build the pattern"
     Agentry::Bot.search_engines.delete(search_engines.keys.first)
     Agentry::Bot.search_engines["renamedengine"] = "Renamed Engine"
     rebuild = Thread.new { Agentry.cache_size = 1000 }
     Thread.pass until rebuild.stop? || !rebuild.alive?
     resume << true
-    [request, rebuild].each(&:join)
+    [request, rebuild].each { |thread| assert thread.join(10) }
 
     assert Agentry::Bot.new("renamedengine/1.0").search_engine?
   ensure
+    # Never leave a thread holding the lock behind: teardown sets the cache size.
+    resume << true
+    [request, rebuild].compact.each { |thread| thread.join(10) }
     Agentry::Bot.define_singleton_method(:trie_source, trie_source)
     Agentry::Bot.singleton_class.send(:private, :trie_source)
     Agentry::Bot.search_engines.replace(search_engines)
+  end
+
+  test "a subclass of Bot finds bots and search engines" do
+    subclass = Class.new(Agentry::Bot)
+    bot = subclass.new("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
+
+    assert bot.bot?
+    assert bot.search_engine?
+    assert_equal "Google Bot", bot.name
   end
 
   test "parses an accept language once and hands out copies" do

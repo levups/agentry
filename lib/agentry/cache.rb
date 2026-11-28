@@ -58,7 +58,7 @@ module Agentry
     # from the old ones. A new generation, so that a Bot kept meanwhile answers
     # again too.
     def self.clear
-      Bot.rebuild_keywords
+      Bot.send(:rebuild_keywords)
       @mutex.synchronize do
         @generation += 1
         @detection_by_user_agent.clear
@@ -67,7 +67,8 @@ module Agentry
     end
 
     # The bot list holds hundreds of entries: compared by identity and size,
-    # like Bot.keywords_pattern, not entry by entry on every request.
+    # like the Hash lists of Bot.keywords_pattern, not entry by entry on every
+    # request.
     def self.lists_unchanged?
       @browser_matchers == Agentry.matchers &&
         @platform_matchers == Platform.matchers &&
@@ -82,8 +83,8 @@ module Agentry
       @platform_matchers = Platform.matchers.dup
       @device_matchers = Device.matchers.dup
       @bot_matchers = Bot.matchers.dup
-      # Copies of the entries too: an exception changed with String#replace no longer equals its copy.
-      @bot_exceptions = Bot.bot_exceptions.map { |exception| exception.dup.freeze }
+      # Copies of its strings too: an exception changed with String#replace no longer equals its copy.
+      @bot_exceptions = Bot.bot_exceptions.map { |exception| Bot.send(:copy_word, exception) }
       @bots = Bot.bots
       @bots_size = Bot.bots.size
     end
