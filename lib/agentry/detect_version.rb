@@ -35,7 +35,10 @@ module Agentry
       string, gem_version = @gem_version
       return gem_version if string == version
 
-      gem_version = Cache.version(version) { UncachedVersion.create(version) }
+      # Frozen: shared by every thread, it computes its segments once, before anyone reads it.
+      gem_version = Cache.version(version) do
+        version.is_a?(String) ? UncachedVersion.create(version).freeze : UncachedVersion.create(version)
+      end
       # An app's browser class may return a Gem::Version, and a frozen browser can't remember.
       kept = version.is_a?(String) && version.bytesize <= Cache::MAX_CACHED_VERSION_BYTES && !frozen?
       @gem_version = [version, gem_version] if kept

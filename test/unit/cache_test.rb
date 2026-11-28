@@ -324,6 +324,13 @@ class CacheTest < Minitest::Test
     assert_equal [[true, false, true, true, false, true, false]] * 3, cached + [answers.call]
   end
 
+  test "compares a requirement given as a String subclass" do
+    requirement = Class.new(String).new(">= 1")
+    chrome = Agentry.new(Agentry["CHROME"])
+
+    2.times { assert chrome.chrome?(requirement) }
+  end
+
   test "parses an accept language once and hands out copies" do
     first = Agentry.new("", accept_language: "fr-FR,en;q=0.8").accept_language
     first.clear

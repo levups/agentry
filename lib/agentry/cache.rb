@@ -50,10 +50,13 @@ module Agentry
       return yield unless version.is_a?(String) && version.bytesize <= MAX_CACHED_VERSION_BYTES &&
         Agentry.cache_size.positive?
 
+      # Keyed by a plain frozen String, never the caller's: a String subclass or a singleton class would compare in
+      # Ruby, where another thread may grow the Hash halfway through a lookup that takes no lock.
+      version = -(version.instance_of?(String) ? version : String.new(version))
       # Built outside the lock: a malformed version raises, and other threads keep storing meanwhile.
       value_by_version[version] || begin
         value = yield
-        @mutex.synchronize { store(value_by_version, -version, value) }
+        @mutex.synchronize { store(value_by_version, version, value) }
       end
     end
 
