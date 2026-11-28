@@ -27,6 +27,10 @@ class ClientHintsTest < Minitest::Test
     Agentry.cache_size = 1000
   end
 
+  teardown do
+    Agentry.cache_size = 1000
+  end
+
   test "parses the brands, without the GREASE one" do
     client_hints = Agentry.new(WINDOWS_CHROME, headers: hints).client_hints
 
@@ -123,5 +127,82 @@ class ClientHintsTest < Minitest::Test
     assert Agentry.new(WINDOWS_CHROME, headers: windows11).platform.windows11?
     refute Agentry.new(LINUX_CHROME, headers: hints(platform: "Linux", mobile: "?1")).device.tablet?
     refute Agentry.new(LINUX_CHROME).device.mobile?
+  end
+
+  test "answers each request from its own hints when they change for a user agent" do
+    windows11 = hints(platform: "Windows", platform_version: "19.0.0", mobile: "?0")
+    windows10 = hints(platform: "Windows", platform_version: "10.0.0", mobile: "?1")
+
+    2.times do
+      assert_equal "11", Agentry.new(WINDOWS_CHROME, headers: windows11).platform.version
+      refute Agentry.new(WINDOWS_CHROME, headers: windows11).device.mobile?
+      assert_equal "10.0", Agentry.new(WINDOWS_CHROME, headers: windows10).platform.version
+      assert Agentry.new(WINDOWS_CHROME, headers: windows10).device.mobile?
+    end
+  end
+
+  test "hands out hints no request can change for the next" do
+    mac = hints(platform: "macOS", platform_version: "15.1.0")
+    client_hints = Agentry.new(MAC_CHROME, headers: mac).client_hints
+
+    client_hints.platform << "x"
+    client_hints.platform_version << "x"
+    client_hints.version_by_brand["Chromium"] << "x"
+    hinted = Agentry.new(MAC_CHROME, headers: mac).client_hints
+    assert_equal ["macOS", "15.1.0", "142"], [hinted.platform, hinted.platform_version, hinted.version_by_brand["Chromium"]]
+    Agentry.new(MAC_CHROME, headers: mac).platform.version << "-changed"
+    assert_equal "15.1.0", Agentry.new(MAC_CHROME, headers: mac).platform.version
+  end
+
+  test "gives each thread its own hints while others fill and empty the cache" do
+    Agentry.cache_size = 2
+    versions = %w[19.0.0 10.0.0 15.0.0 13.0.0]
+    threads = versions.map do |version|
+      Thread.new do
+        Array.new(2_000) do
+          Thread.pass # interleave the readers with the inserts and the flushes
+          Agentry.new(WINDOWS_CHROME, headers: hints(platform: "Windows", platform_version: version))
+        end
+          .map { |browser| browser.client_hints.platform_version }.uniq
+      end
+    end
+
+    assert_equal versions.zip, threads.map(&:value)
+  end
+
+  test "ignores a Cloudflare header in an encoding its patterns can't read" do
+    browser = Agentry.new(WINDOWS_CHROME, headers: {"HTTP_X_BOT_SCORE" => "1".encode("UTF-16LE")})
+
+    assert_nil browser.cloudflare.bot_score
+  end
+
+  test "reads hints in two encodings that can't be joined, and ignores a NUL byte" do
+    mixed = hints(brands: %("Chromé";v="142").b, platform: "Windowsé")
+
+    assert_equal ["142"], Agentry.new(WINDOWS_CHROME, headers: mixed).client_hints.version_by_brand.values
+    assert_nil Agentry.new(WINDOWS_CHROME, headers: hints(platform: "Windows\0")).client_hints.platform
+  end
+
+  test "ignores a hint in an encoding its patterns can't read" do
+    utf16 = hints(platform: "Windows").merge("HTTP_SEC_CH_UA_PLATFORM" => %("Windows").encode("UTF-16LE"))
+
+    assert_nil Agentry.new(WINDOWS_CHROME, headers: utf16).client_hints.platform
+    assert Agentry.new(WINDOWS_CHROME, headers: utf16).platform.windows?
+  end
+
+  test "reads hints alike with the cache off and from forged values" do
+    windows11 = hints(platform: "Windows", platform_version: "19.0.0")
+    forged = windows11.merge("HTTP_SEC_CH_UA_PLATFORM_VERSION" => ["19.0.0"])
+    oversized = windows11.merge("HTTP_SEC_CH_UA" => %("#{"a" * 600}";v="1"))
+
+    assert Agentry.new(WINDOWS_CHROME, headers: forged).platform.windows?
+    refute Agentry.new(WINDOWS_CHROME, headers: forged).platform.windows11?
+    assert_empty Agentry.new(WINDOWS_CHROME, headers: oversized).client_hints.version_by_brand
+    many_brands = Array.new(20) { |index| %("Brand #{index}";v="1") }.join(", ")
+    assert_equal 20, Agentry.new(WINDOWS_CHROME, headers: hints(brands: many_brands)).client_hints.version_by_brand.size
+    assert_equal 20, Agentry.new(WINDOWS_CHROME, headers: hints(brands: many_brands)).client_hints.version_by_brand.size
+    assert Agentry.new(WINDOWS_CHROME, headers: windows11).platform.windows11?
+    Agentry.cache_size = 0
+    assert Agentry.new(WINDOWS_CHROME, headers: windows11).platform.windows11?
   end
 end

@@ -46,7 +46,7 @@ module Agentry
     end
 
     def client_hints
-      @client_hints ||= @headers ? ClientHints.new(@headers) : ClientHints::NONE
+      @client_hints ||= @headers ? Cache.client_hints(@headers) : ClientHints::NONE
     end
 
     def cloudflare

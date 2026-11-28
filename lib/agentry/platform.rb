@@ -51,7 +51,7 @@ module Agentry
     def with_client_hints(client_hints)
       hinted_class = client_hints.platform_class
       return self unless hinted_class
-      return self if subject.instance_of?(hinted_class) && client_hints.platform_version.nil?
+      return self if subject.instance_of?(hinted_class) && !client_hints.platform_version?
 
       self.class.new(ua, client_hints:)
     end

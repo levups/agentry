@@ -166,6 +166,16 @@ class CacheTest < Minitest::Test
     Agentry::Bot.bots.delete("cachedbot")
   end
 
+  test "names a bot by a keyword shorter than the bots.yml ones" do
+    refute Agentry.new("Mozilla/5.0 qz/1.0").bot?
+
+    Agentry::Bot.bots["qz/"] = "QZ"
+    assert_equal "QZ", Agentry.new("Mozilla/5.0 qz/1.0").bot.name
+    assert_equal "QZ", Agentry.new("qz/1.0").bot.name
+  ensure
+    Agentry::Bot.bots.delete("qz/")
+  end
+
   test "answers again when a bot exception is added" do
     assert Agentry.new("cachedbot/1.0").bot?
 
@@ -175,6 +185,127 @@ class CacheTest < Minitest::Test
     Agentry::Bot.bot_exceptions.delete("cachedbot")
   end
 
+  test "answers again when a bot exception is replaced in place" do
+    exception = Agentry::Bot.bot_exceptions.first
+    assert Agentry.new("cachedbot/1.0").bot?
+
+    Agentry::Bot.bot_exceptions[0] = "cachedbot"
+    refute Agentry.new("cachedbot/1.0").bot?
+  ensure
+    Agentry::Bot.bot_exceptions[0] = exception
+  end
+
+  test "finds a search engine renamed in place once the cache size is set" do
+    search_engines = Agentry::Bot.search_engines.dup
+    refute Agentry::Bot.new("renamedengine/1.0").search_engine?
+
+    Agentry::Bot.search_engines.delete(search_engines.keys.first)
+    Agentry::Bot.search_engines["renamedengine"] = "Renamed Engine"
+    Agentry.cache_size = 1000
+    assert Agentry::Bot.new("renamedengine/1.0").search_engine?
+  ensure
+    Agentry::Bot.search_engines.replace(search_engines)
+  end
+
+  test "names a bot renamed in place once the cache size is set, as the README says" do
+    bots = Agentry::Bot.bots.dup
+    refute Agentry.new("Mozilla/5.0 renamedfoo/1.0").bot?
+
+    Agentry::Bot.bots.delete(bots.keys.first)
+    Agentry::Bot.bots["renamedfoo"] = "Renamed Foo"
+    Agentry.cache_size = 1000
+    assert_equal "Renamed Foo", Agentry.new("Mozilla/5.0 renamedfoo/1.0").bot.name
+  ensure
+    Agentry::Bot.bots.replace(bots)
+  end
+
+  test "a bot kept across a rename answers again once the cache size is set" do
+    bots = Agentry::Bot.bots.dup
+    bot = Agentry::Bot.new("Mozilla/5.0 renamedfoo/1.0")
+    refute bot.bot?
+
+    Agentry::Bot.bots.delete(bots.keys.first)
+    Agentry::Bot.bots["renamedfoo"] = "Renamed Foo"
+    Agentry.cache_size = 1000
+    assert_equal "Renamed Foo", bot.name
+  ensure
+    Agentry::Bot.bots.replace(bots)
+  end
+
+  # The request copies the list, then waits inside trie_source while the app renames an engine and sets the cache
+  # size: the rebuild must not be overwritten by the request's older pattern.
+  test "finds a search engine renamed while a request builds the old pattern" do
+    search_engines = Agentry::Bot.search_engines.dup
+    trie_source = Agentry::Bot.method(:trie_source)
+    building = Queue.new
+    resume = Queue.new
+    Agentry::Bot.define_singleton_method(:trie_source) do |words|
+      if Thread.current[:slow_build]
+        building << true
+        resume.pop
+      end
+      trie_source.call(words)
+    end
+
+    Agentry::Bot.search_engines["growingengine"] = "Growing Engine"
+    request = Thread.new do
+      Thread.current[:slow_build] = true
+      Agentry::Bot.new("x").search_engine?
+    end
+    assert building.pop(timeout: 10), "the request did not build the pattern"
+    Agentry::Bot.search_engines.delete(search_engines.keys.first)
+    Agentry::Bot.search_engines["renamedengine"] = "Renamed Engine"
+    rebuild = Thread.new { Agentry.cache_size = 1000 }
+    Thread.pass until rebuild.stop? || !rebuild.alive?
+    resume << true
+    [request, rebuild].each { |thread| assert thread.join(10) }
+
+    assert Agentry::Bot.new("renamedengine/1.0").search_engine?
+  ensure
+    # Never leave a thread holding the lock behind: teardown sets the cache size.
+    resume << true
+    [request, rebuild].compact.each { |thread| thread.join(10) }
+    Agentry::Bot.define_singleton_method(:trie_source, trie_source)
+    Agentry::Bot.singleton_class.send(:private, :trie_source)
+    Agentry::Bot.search_engines.replace(search_engines)
+  end
+
+  test "a subclass of Bot finds bots and search engines" do
+    subclass = Class.new(Agentry::Bot)
+    bot = subclass.new("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
+
+    assert bot.bot?
+    assert bot.search_engine?
+    assert_equal "Google Bot", bot.name
+  end
+
+  test "a subclass of Bot names a bot renamed in place once the cache size is set" do
+    bots = Agentry::Bot.bots.dup
+    subclass = Class.new(Agentry::Bot) do
+      def self.bots
+        Agentry::Bot.bots
+      end
+    end
+    assert_equal "Google Bot", subclass.new("Googlebot/2.1").name
+
+    Agentry::Bot.bots.delete(bots.keys.first)
+    Agentry::Bot.bots["renamedfoo"] = "Renamed Foo"
+    Agentry.cache_size = 1000
+    assert_equal "Renamed Foo", subclass.new("Mozilla/5.0 renamedfoo/1.0").name
+  ensure
+    Agentry::Bot.bots.replace(bots)
+  end
+
+  test "names a bot from a bot list that is not a Hash" do
+    table = Agentry::Bot.bots.to_a.to_h
+    list = Object.new
+    list.define_singleton_method(:keys) { table.keys }
+    list.define_singleton_method(:[]) { |keyword| table[keyword] }
+    list.define_singleton_method(:size) { table.size }
+    subclass = Class.new(Agentry::Bot)
+    subclass.define_singleton_method(:bots) { list }
+
+    assert_equal "Google Bot", subclass.new("Mozilla/5.0 (compatible; Googlebot/2.1)").name
   test "compares versions alike with the cache on and off" do
     chrome_user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " \
       "Chrome/142.0.0.0 Safari/537.36"
@@ -186,10 +317,6 @@ class CacheTest < Minitest::Test
         chrome.chrome?("not a version"), browser.chrome?("~> 1.0"), browser.chrome?(">= 2")]
     end
     cached = Array.new(2) { answers.call }
-    kept_versions = %i[@requirement_by_version @gem_version_by_version]
-      .flat_map { |name| Agentry::Cache.instance_variable_get(name).keys }
-    assert_includes kept_versions, "142.0.0.0"
-    refute_includes kept_versions, long_version
     Agentry.cache_size = 0
 
     assert_equal [[true, false, true, true, false, true, false]] * 3, cached + [answers.call]

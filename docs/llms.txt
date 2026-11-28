@@ -1,0 +1,20 @@
+# Agentry
+
+> Detects the browser, platform, device and bot behind a User-Agent header
+
+Install with `gem "agentry"` in the Gemfile.
+
+## Docs
+
+- [Everything in one file](https://levups.github.io/agentry/llms-full.txt): the README, then every page below but the home page, in Markdown
+- [Agentry: browser and bot detection for Ruby](https://levups.github.io/agentry/): Agentry is a Ruby gem that reads the User-Agent header of a request and tells you the browser, the operating system, the device or the bot behind it. A faster fork of the browser gem, with the same methods under its own name and a bot list synced every week.
+- [Agentry Bots](https://levups.github.io/agentry/bots.html): How Agentry detects bots and search engines, how to extend its lists, and the corpus of 20,328 user agents its answers are checked on.
+- [Agentry Guide](https://levups.github.io/agentry/guide.html): Install Agentry, migrate from the browser gem, detect browsers, bots, devices and platforms, and use it in Rails and Rack.
+- [Agentry Migration](https://levups.github.io/agentry/migration.html): Move from the browser gem, or from Agentry 3, to Agentry 4: what changes on its own, the names to rename, a prompt for a coding agent, and how to go back.
+
+## Optional
+
+- [Agentry Benchmarks](https://levups.github.io/agentry/benchmarks.html): Agentry against the browser gem: time and objects allocated per request, measured by bench/request.rb.
+- [Benchmark numbers](https://levups.github.io/agentry/benchmarks.json): the latest measurements, as JSON
+- [Changelog](https://github.com/levups/agentry/blob/main/CHANGELOG.md): what changed in each version
+- [Source code](https://github.com/levups/agentry)

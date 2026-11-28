@@ -14,6 +14,9 @@ LOW_ENTROPY_HINTS = {
   "HTTP_SEC_CH_UA_PLATFORM" => '"Windows"'
 }.freeze
 WINDOWS_11_HINTS = LOW_ENTROPY_HINTS.merge("HTTP_SEC_CH_UA_PLATFORM_VERSION" => '"19.0.0"').freeze
+# Windows 10 and 11 send the same frozen user agent: only the platform version differs.
+PLATFORM_VERSION_HINTS = %w[19.0.0 10.0.0 15.0.0]
+  .map { |version| LOW_ENTROPY_HINTS.merge("HTTP_SEC_CH_UA_PLATFORM_VERSION" => %("#{version}")).freeze }
 CLOUDFLARE_HEADERS = {
   "HTTP_X_BOT_VERIFIED" => "true", "HTTP_X_BOT_CATEGORY" => "Search Engine Crawler",
   "HTTP_X_BOT_SCORE" => "1", "HTTP_CF_IPCOUNTRY" => "US"
@@ -45,6 +48,7 @@ end
 measure("platform and device, no headers") { request(nil) }
 measure("platform and device, low-entropy hints") { request(LOW_ENTROPY_HINTS) }
 measure("platform and device, Windows 11 hints") { request(WINDOWS_11_HINTS) }
+measure("platform and device, 3 platform versions") { request(PLATFORM_VERSION_HINTS.rotate!.first) }
 measure("Cloudflare headers") { cloudflare(CLOUDFLARE_HEADERS) }
 
 bot = Agentry.new(GOOGLEBOT).bot
